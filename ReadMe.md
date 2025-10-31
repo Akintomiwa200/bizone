@@ -56,6 +56,67 @@ backend/
 
 
 
+Frontend Folder Structure
 
 
- 
+
+
+frontend/
+├── app/                    # Next.js 14 App Router
+│   ├── (auth)/
+│   │   ├── login/
+│   │   ├── register/
+│   │   └── layout.tsx
+│   ├── (dashboard)/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── business/
+│   │   ├── products/
+│   │   ├── orders/
+│   │   └── analytics/
+│   ├── (rider)/
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── api/               # Next.js API routes
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx           # Landing page
+├── components/
+│   ├── ui/
+│   │   ├── Button.tsx
+│   │   ├── Input.tsx
+│   │   ├── Modal.tsx
+│   │   └── Loading.tsx
+│   ├── layout/
+│   │   ├── Header.tsx
+│   │   ├── Sidebar.tsx
+│   │   └── DashboardLayout.tsx
+│   ├── business/
+│   │   ├── BusinessCard.tsx
+│   │   ├── ProductForm.tsx
+│   │   └── InventoryTable.tsx
+│   ├── orders/
+│   │   ├── OrderCard.tsx
+│   │   ├── OrderTimeline.tsx
+│   │   └── CreateOrder.tsx
+│   └── delivery/
+│       ├── DeliveryMap.tsx
+│       ├── RiderCard.tsx
+│       └── TrackingView.tsx
+├── lib/
+│   ├── utils.ts
+│   ├── api.ts
+│   ├── socket.ts
+│   └── store.ts           # Zustand store
+├── hooks/
+│   ├── useAuth.ts
+│   ├── useBusiness.ts
+│   ├── useOrders.ts
+│   └── useSocket.ts
+├── types/
+│   ├── business.ts
+│   ├── order.ts
+│   └── index.ts
+└── public/
+    ├── images/
+    └── icons/
