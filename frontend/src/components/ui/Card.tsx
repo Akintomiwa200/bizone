@@ -21,6 +21,16 @@ interface CardFooterProps {
   className?: string;
 }
 
+interface CardTitleProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+interface CardDescriptionProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
 const Card: React.FC<CardProps> = ({ children, className }) => {
   return (
     <div className={cn('bg-white rounded-lg border border-gray-200 shadow-sm', className)}>
@@ -53,4 +63,20 @@ const CardFooter: React.FC<CardFooterProps> = ({ children, className }) => {
   );
 };
 
-export { Card, CardHeader, CardContent, CardFooter };
+const CardTitle: React.FC<CardTitleProps> = ({ children, className }) => {
+  return (
+    <h3 className={cn('text-lg font-semibold text-gray-900', className)}>
+      {children}
+    </h3>
+  );
+};
+
+const CardDescription: React.FC<CardDescriptionProps> = ({ children, className }) => {
+  return (
+    <p className={cn('text-sm text-gray-600', className)}>
+      {children}
+    </p>
+  );
+};
+
+export { Card, CardHeader, CardContent, CardFooter, CardDescription, CardTitle };
