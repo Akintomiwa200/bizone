@@ -16,6 +16,7 @@ import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
 import deliveryRoutes from './routes/delivery.js';
 import paymentRoutes from './routes/payment.js';
+import whatsappRoutes from './routes/whatsapp.js';
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

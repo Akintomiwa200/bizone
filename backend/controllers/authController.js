@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import { googleAuthService } from '../services/googleAuthService.js';
 
 // Generate JWT token
 const generateToken = (userId) => {
@@ -141,6 +142,98 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating profile',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Initiate Google OAuth
+// @route   GET /api/auth/google
+// @access  Public
+export const googleAuth = async (req, res) => {
+  try {
+    const authUrl = googleAuthService.getAuthUrl();
+    res.redirect(authUrl);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error initiating Google authentication',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Google OAuth callback
+// @route   GET /api/auth/google/callback
+// @access  Public
+export const googleAuthCallback = async (req, res) => {
+  try {
+    const { code, error } = req.query;
+
+    if (error) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login?error=${error}`
+      );
+    }
+
+    if (!code) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login?error=no_code`
+      );
+    }
+
+    // Handle OAuth callback
+    const { user, token, refreshToken } = await googleAuthService.handleCallback(code);
+
+    // Redirect to frontend with token
+    const redirectUrl = new URL(
+      `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/google/callback`
+    );
+    redirectUrl.searchParams.set('token', token);
+    if (refreshToken) {
+      redirectUrl.searchParams.set('refreshToken', refreshToken);
+    }
+    redirectUrl.searchParams.set('success', 'true');
+
+    res.redirect(redirectUrl.toString());
+  } catch (error) {
+    console.error('Google OAuth callback error:', error);
+    res.redirect(
+      `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login?error=auth_failed`
+    );
+  }
+};
+
+// @desc    Google OAuth callback (API version - returns JSON)
+// @route   POST /api/auth/google/callback
+// @access  Public
+export const googleAuthCallbackAPI = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Authorization code is required'
+      });
+    }
+
+    // Handle OAuth callback
+    const { user, token, refreshToken } = await googleAuthService.handleCallback(code);
+
+    res.json({
+      success: true,
+      message: 'Google authentication successful',
+      data: {
+        user,
+        token,
+        refreshToken
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Google authentication failed',
       error: error.message
     });
   }
