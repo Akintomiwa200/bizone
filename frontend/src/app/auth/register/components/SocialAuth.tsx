@@ -61,7 +61,7 @@ const SocialAuth = () => {
         </div>
       </div>
 
-      <div className="flex justify-center gap-3">
+      <div className="flex justify-center  gap-3">
         {socialProviders.map((provider, index) => (
           <motion.div
             key={provider.name}
@@ -72,7 +72,7 @@ const SocialAuth = () => {
             <Button
               type="button"
               onClick={() => handleSocialLogin(provider.name)}
-              className={`w-[10em] ${provider.bgColor} ${provider.textColor} transition-all duration-300 `}
+              className={`w-[10em] ${provider.bgColor} ${provider.textColor} transition-all duration-300`}
               size="sm"
             >
               <span className="flex items-center justify-center">
