@@ -7,3 +7,26 @@ WHATSAPP_WEBHOOK_URL=https://your-domain.com/api/webhooks/whatsapp
 WHATSAPP_BUSINESS_ACCOUNT_ID=your_business_account_id
 WHATSAPP_APP_ID=your_app_id
 WHATSAPP_APP_SECRET=your_app_secret
+
+
+// In your callback page (/auth/google/callback)
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  const success = params.get('success');
+  
+  if (success === 'true' && token) {
+    // Store token and redirect to dashboard
+    localStorage.setItem('auth_token', token);
+    router.push('/dashboard');
+  }
+}, []);
+
+
+social auth.tsx
+const handleSocialLogin = (provider: string) => {
+  if (provider === 'Google') {
+    // Redirect to backend Google auth endpoint
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+  }
+}
