@@ -607,4 +607,4 @@ frontend/
 ├── tsconfig.json
 ├── package.json
 ├── postcss.config.js
-└── .env.local
+└── .env.localtend

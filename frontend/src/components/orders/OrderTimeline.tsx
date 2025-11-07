@@ -1,3 +1,71 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { orderSummaries } from '@/utils/mock-data'
+import { CheckCircle2, Clock, Package2, Truck } from 'lucide-react'
+
+const orderEvents = [
+  {
+    title: 'Order confirmed',
+    description: 'Customer completed checkout on Bizone storefront',
+    time: '08:41',
+    icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+  },
+  {
+    title: 'Items packaged',
+    description: 'Warehouse scanned items into Bizone inventory',
+    time: '08:58',
+    icon: <Package2 className="h-5 w-5 text-blue-500" />
+  },
+  {
+    title: 'Delivery dispatched',
+    description: 'Rider picked up order and started Google Maps navigation',
+    time: '09:14',
+    icon: <Truck className="h-5 w-5 text-purple-500" />
+  },
+  {
+    title: 'Delivered',
+    description: 'Customer signed digitally and left a 5-star rating',
+    time: '09:52',
+    icon: <Clock className="h-5 w-5 text-amber-500" />
+  }
+]
+
+export default function OrderTimeline() {
+  const currentOrder = orderSummaries[0]
+
+  return (
+    <Card className="border border-gray-200/70 shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-lg text-gray-900">Order timeline — {currentOrder.id}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
+          <div className="font-semibold text-gray-900">{currentOrder.customer}</div>
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            <span>Status • {currentOrder.status}</span>
+            <span>Fulfilment • {currentOrder.fulfillment}</span>
+          </div>
+        </div>
+        <div className="space-y-4">
+          {orderEvents.map((event, index) => (
+            <div key={event.title} className="flex items-start gap-3">
+              <div className="flex flex-col items-center">
+                {event.icon}
+                {index !== orderEvents.length - 1 && (
+                  <span className="block w-px h-8 bg-gray-200 mt-1"></span>
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">{event.title}</p>
+                <p className="text-xs text-gray-500">{event.description}</p>
+                <p className="text-xs text-gray-400 mt-1">{event.time}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 import { Order, OrderStatus } from '@/types';
 
 interface OrderTimelineProps {
