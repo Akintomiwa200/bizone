@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import SocialAuth from './SocialAuth'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -196,6 +197,10 @@ const RegisterForm = () => {
                   )}
                 </div>
               </form>
+
+              {/* Social Auth */}
+              <SocialAuth />
+
 
               {/* Login Link */}
               <motion.div
