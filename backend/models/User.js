@@ -15,12 +15,15 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: true,
-    unique: true
+    sparse: true,
+    // Phone is optional for OAuth users, required for local auth
+    // Validation handled in pre-save hook
   },
   password: {
     type: String,
-    required: true,
+    required: function() {
+      return this.authProvider === 'local';
+    },
     minlength: 6
   },
   role: {
@@ -31,6 +34,21 @@ const userSchema = new mongoose.Schema({
   isVerified: {
     type: Boolean,
     default: false
+  },
+  authProvider: {
+    type: String,
+    enum: ['local', 'google', 'facebook'],
+    default: 'local'
+  },
+  googleId: {
+    type: String,
+    sparse: true,
+    unique: true
+  },
+  facebookId: {
+    type: String,
+    sparse: true,
+    unique: true
   },
   profile: {
     avatar: String,
@@ -69,10 +87,24 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Hash password before saving
+// Validate phone for local auth users
+userSchema.pre('validate', function(next) {
+  if (this.authProvider === 'local' && !this.phone) {
+    this.invalidate('phone', 'Phone number is required for local authentication');
+  }
+  next();
+});
+
+// Hash password before saving (only for local auth)
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
+  if (this.authProvider !== 'local' && !this.password) {
+    // OAuth users don't need passwords
+    return next();
+  }
+  if (this.password) {
+    this.password = await bcrypt.hash(this.password, 12);
+  }
   next();
 });
 
