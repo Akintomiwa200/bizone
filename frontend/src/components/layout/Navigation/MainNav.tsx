@@ -18,14 +18,14 @@ interface MainNavProps {
 }
 
 const businessNavItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: Building },
-  { name: 'Products', href: '/dashboard/products', icon: Package },
-  { name: 'Orders', href: '/dashboard/orders', icon: CreditCard },
-  { name: 'Customers', href: '/dashboard/customers', icon: Users },
-  { name: 'Delivery', href: '/dashboard/delivery', icon: Truck },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'WhatsApp AI', href: '/dashboard/whatsapp-ai', icon: MessageCircle },
-  { name: 'Finances', href: '/dashboard/finances', icon: CreditCard },
+  // { name: 'Dashboard', href: '/dashboard', icon: Building },
+  // { name: 'Products', href: '/dashboard/products', icon: Package },
+  // { name: 'Orders', href: '/dashboard/orders', icon: CreditCard },
+  // { name: 'Customers', href: '/dashboard/customers', icon: Users },
+  // { name: 'Delivery', href: '/dashboard/delivery', icon: Truck },
+  // { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  // { name: 'WhatsApp AI', href: '/dashboard/whatsapp-ai', icon: MessageCircle },
+  // { name: 'Finances', href: '/dashboard/finances', icon: CreditCard },
 ]
 
 const riderNavItems = [

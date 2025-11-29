@@ -1,3 +1,7 @@
+'use client'
+
+
+
 import { useState } from 'react'
 import { whatsappConversations } from '@/utils/mock-data'
 import MessageBubble from './MessageBubble'

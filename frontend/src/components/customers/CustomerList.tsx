@@ -1,3 +1,5 @@
+"use client"
+
 import { customerSummaries, CustomerSummary } from '@/utils/mock-data'
 import CustomerCard from './CustomerCard'
 import Input from '@/components/ui/Input'

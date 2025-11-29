@@ -16,14 +16,3 @@ export default function CustomerPortalPage() {
     </div>
   )
 }
-const Dashboard =()=>{
-	return(
-
-		<>
-
-		</>
-		)
-}
-
-
-export default Dashboard
