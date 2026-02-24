@@ -1,9 +1,7 @@
-{
-  "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "start": "cd backend && npm start"
-  }
+"scripts": {
+  "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+  "dev:backend": "cd backend && pnpm run dev",
+  "dev:frontend": "cd frontend && pnpm run dev",
+  "build": "cd frontend && pnpm run build",
+  "start": "cd backend && pnpm start"
 }
