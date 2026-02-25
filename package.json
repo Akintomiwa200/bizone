@@ -1,7 +1,9 @@
-"scripts": {
-  "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
-  "dev:backend": "cd backend && pnpm run dev",
-  "dev:frontend": "cd frontend && pnpm run dev",
-  "build": "cd frontend && pnpm run build",
-  "start": "cd backend && pnpm start"
+{
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "dev:backend": "cd backend && pnpm run dev",
+    "dev:frontend": "cd frontend && pnpm run dev",
+    "build": "cd frontend && pnpm run build",
+    "start": "cd backend && pnpm start"
+  }
 }

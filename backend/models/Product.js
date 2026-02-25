@@ -53,6 +53,13 @@ const productSchema = new mongoose.Schema({
     title: String,
     description: String
   },
+  location: {
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0]
+    }
+  },
   status: {
     type: String,
     enum: ['active', 'draft', 'archived'],
@@ -67,14 +74,17 @@ const productSchema = new mongoose.Schema({
 });
 
 // Index for search functionality
-productSchema.index({ 
-  name: 'text', 
+productSchema.index({
+  name: 'text',
   description: 'text',
   category: 'text'
 });
 
+// GeoSpatial Index for radius searches
+productSchema.index({ location: '2dsphere' });
+
 // Virtual for profit margin
-productSchema.virtual('profitMargin').get(function() {
+productSchema.virtual('profitMargin').get(function () {
   if (!this.costPerItem) return 0;
   return ((this.price - this.costPerItem) / this.price) * 100;
 });

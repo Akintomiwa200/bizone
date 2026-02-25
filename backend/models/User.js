@@ -21,15 +21,24 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: function() {
+    required: function () {
       return this.authProvider === 'local';
     },
     minlength: 6
   },
   role: {
     type: String,
-    enum: ['business_owner', 'rider', 'admin'],
+    enum: ['business_owner', 'rider', 'admin', 'farmer', 'buyer', 'delivery'],
     default: 'business_owner'
+  },
+  wallet: {
+    balance: { type: Number, default: 0 },
+    accountNumber: { type: String, unique: true, sparse: true },
+    bankName: { type: String, default: 'Bizone Wallet' }
+  },
+  botState: {
+    status: { type: String, default: 'NEW' }, // NEW, AWAITING_ROLE, IDLE, NEGOTIATING, AWAITING_DELIVERY, AWAITING_LOCATION
+    tempData: { type: mongoose.Schema.Types.Mixed, default: {} }
   },
   isVerified: {
     type: Boolean,
@@ -64,9 +73,10 @@ const userSchema = new mongoose.Schema({
     address: String,
     city: { type: String, default: 'Jos' },
     state: { type: String, default: 'Plateau' },
+    type: { type: String, enum: ['Point'], default: 'Point' },
     coordinates: {
-      lat: Number,
-      lng: Number
+      type: [Number], // [longitude, latitude]
+      default: [0, 0]
     }
   },
   preferences: {
@@ -88,7 +98,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Validate phone for local auth users
-userSchema.pre('validate', function(next) {
+userSchema.pre('validate', function (next) {
   if (this.authProvider === 'local' && !this.phone) {
     this.invalidate('phone', 'Phone number is required for local authentication');
   }
@@ -96,7 +106,7 @@ userSchema.pre('validate', function(next) {
 });
 
 // Hash password before saving (only for local auth)
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   if (this.authProvider !== 'local' && !this.password) {
     // OAuth users don't need passwords
@@ -109,12 +119,12 @@ userSchema.pre('save', async function(next) {
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Remove password from JSON output
-userSchema.methods.toJSON = function() {
+userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;
   return user;

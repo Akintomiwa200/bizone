@@ -47,7 +47,7 @@ export const whatsappService = {
   async sendTemplateMessage(to, templateName, languageCode = 'en', parameters = [], businessId) {
     try {
       const components = [];
-      
+
       if (parameters.length > 0) {
         components.push({
           type: 'body',
@@ -253,7 +253,7 @@ export const whatsappService = {
   async getChats(businessId, options = {}) {
     try {
       const { status = 'active', limit = 50, page = 1 } = options;
-      
+
       const query = { business: businessId, status };
       const skip = (page - 1) * limit;
 
@@ -411,10 +411,10 @@ export const whatsappService = {
       }
 
       const from = message.from;
-      const messageContent = message.text?.body || 
-                            message.image?.caption || 
-                            message.document?.caption || 
-                            'Media message';
+      const messageContent = message.text?.body ||
+        message.image?.caption ||
+        message.document?.caption ||
+        'Media message';
 
       // Save incoming message
       await this.saveMessage(business._id, from, {
@@ -440,6 +440,10 @@ export const whatsappService = {
           }
         );
       }
+
+      // Route message to conversational bot engine
+      const { whatsappBotService } = await import('./whatsappBotService.js');
+      await whatsappBotService.handleIncomingMessage(message, business._id);
 
       return { success: true };
     } catch (error) {
