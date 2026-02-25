@@ -38,13 +38,27 @@ const io = new Server(httpServer, {
 const ENV = process.env.NODE_ENV || 'development';
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
-const API_VERSION = 'v1'; // You can make this configurable if needed
+const API_VERSION = 'v1';
+
+// Track server state
+let isShuttingDown = false;
+
+// Get MongoDB connection string (mask sensitive info)
+const getMongoDBConnectionString = () => {
+  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/bizone';
+
+  // Mask password if present
+  if (uri.includes('@') && uri.includes(':')) {
+    return uri.replace(/(:)([^@]+)(@)/, '$1*****$3');
+  }
+  return uri;
+};
 
 // Get local IP addresses for network access
 const getNetworkInterfaces = () => {
   const interfaces = os.networkInterfaces();
   const addresses = [];
-  
+
   for (const iface of Object.values(interfaces)) {
     for (const alias of iface) {
       if (alias.family === 'IPv4' && !alias.internal) {
@@ -56,28 +70,34 @@ const getNetworkInterfaces = () => {
 };
 
 // Utility function to format startup message
-const printStartupMessage = (port, ipAddresses, env) => {
+const printStartupMessage = (port, ipAddresses, env, dbConnected) => {
   const border = '═'.repeat(60);
   const padding = ' '.repeat(4);
-  
+  const dbStatus = dbConnected ? '✅ Connected' : '❌ Disconnected';
+  const dbString = getMongoDBConnectionString();
+
   console.log('\n' + border);
   console.log(`║${padding}🚀 BIZONE SERVER STARTED SUCCESSFULLY${padding}║`);
   console.log(border);
   console.log(`║ Environment:    ${env.padEnd(38)}║`);
   console.log(`║ Version:        ${API_VERSION.padEnd(38)}║`);
   console.log(`║ Port:           ${port.toString().padEnd(38)}║`);
+  console.log(`║ Database:       ${dbStatus.padEnd(38)}║`);
+  console.log(border);
+  console.log(`║🗄️ MongoDB:`);
+  console.log(`║   ➜ ${dbString.padEnd(52)}║`);
   console.log(border);
   console.log(`║📍 Local Access:`);
   console.log(`║   ➜ http://localhost:${port}`);
   console.log(`║   ➜ http://127.0.0.1:${port}`);
-  
+
   if (ipAddresses.length > 0) {
     console.log(`║📡 Network Access:`);
     ipAddresses.forEach(ip => {
       console.log(`║   ➜ http://${ip}:${port}`);
     });
   }
-  
+
   console.log(border);
   console.log(`║📚 API Documentation:`);
   console.log(`║   ➜ http://localhost:${port}/api/health`);
@@ -133,7 +153,10 @@ app.use(rateLimiter);
 // Request logging in development
 if (ENV === 'development') {
   app.use((req, res, next) => {
-    console.log(`📨 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+    // Don't log during shutdown
+    if (!isShuttingDown) {
+      console.log(`📨 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+    }
     next();
   });
 }
@@ -141,26 +164,26 @@ if (ENV === 'development') {
 // Socket.io for real-time features
 io.on('connection', (socket) => {
   console.log(`🔌 User connected: ${socket.id} - ${new Date().toLocaleTimeString()}`);
-  
+
   socket.on('join-business', (businessId) => {
     socket.join(`business-${businessId}`);
     console.log(`🏢 Business room joined: ${businessId}`);
   });
-  
+
   socket.on('join-delivery', (deliveryId) => {
     socket.join(`delivery-${deliveryId}`);
     console.log(`🚚 Delivery room joined: ${deliveryId}`);
   });
-  
+
   socket.on('join-order', (orderId) => {
     socket.join(`order-${orderId}`);
     console.log(`📦 Order room joined: ${orderId}`);
   });
-  
+
   socket.on('error', (error) => {
     console.error(`❌ Socket error from ${socket.id}:`, error);
   });
-  
+
   socket.on('disconnect', (reason) => {
     console.log(`🔌 User disconnected: ${socket.id} - Reason: ${reason}`);
   });
@@ -175,12 +198,30 @@ app.set('io', io);
 
 // Health check (public, no auth needed)
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'BizOne API is running',
-    timestamp: new Date().toISOString(),
-    environment: ENV,
-    uptime: process.uptime()
+  // Import mongoose dynamically to avoid circular dependency
+  import('mongoose').then(({ default: mongoose }) => {
+    res.status(200).json({
+      status: 'OK',
+      message: 'BizOne API is running',
+      timestamp: new Date().toISOString(),
+      environment: ENV,
+      uptime: process.uptime(),
+      shuttingDown: isShuttingDown,
+      database: {
+        connected: mongoose.connection.readyState === 1,
+        host: mongoose.connection.host,
+        name: mongoose.connection.name
+      }
+    });
+  }).catch(() => {
+    res.status(200).json({
+      status: 'OK',
+      message: 'BizOne API is running',
+      timestamp: new Date().toISOString(),
+      environment: ENV,
+      uptime: process.uptime(),
+      shuttingDown: isShuttingDown
+    });
   });
 });
 
@@ -195,10 +236,18 @@ app.use('/api/whatsapp', whatsappRoutes);
 
 // =============================================
 // IMPORTANT: Express 5 404 Handler
-// DO NOT USE app.use('*', ...) or app.all('*', ...)
 // =============================================
 app.use((req, res, next) => {
-  // This catches all undefined routes (works in Express 5)
+  // Don't handle new requests during shutdown
+  if (isShuttingDown) {
+    return res.status(503).json({
+      success: false,
+      error: 'Service Unavailable',
+      message: 'Server is shutting down',
+      timestamp: new Date().toISOString()
+    });
+  }
+
   res.status(404).json({
     success: false,
     error: 'Not Found',
@@ -231,19 +280,13 @@ const startServer = async () => {
   try {
     // Connect to database
     const dbConnected = await initializeDatabase();
-    
-    if (!dbConnected) {
-      console.warn('⚠️  Server starting without database connection');
-    } else {
-      console.log('🗄 MongoDB Connected');
-    }
-    
+
     // Start HTTP server
     httpServer.listen(PORT, HOST, () => {
       const ipAddresses = getNetworkInterfaces();
-      printStartupMessage(PORT, ipAddresses, ENV);
+      printStartupMessage(PORT, ipAddresses, ENV, dbConnected);
     });
-    
+
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
@@ -251,48 +294,98 @@ const startServer = async () => {
 };
 
 // =============================================
-// Graceful Shutdown
+// FIXED: Graceful Shutdown - No ELIFECYCLE error
 // =============================================
-const gracefulShutdown = () => {
-  console.log('\n\n⚠️  Received shutdown signal. Closing connections...');
-  
-  httpServer.close(() => {
-    console.log('✅ HTTP server closed');
-    
-    // Close database connection if using mongoose
-    import('mongoose').then(({ default: mongoose }) => {
+const gracefulShutdown = (signal) => {
+  // Prevent multiple shutdown calls
+  if (isShuttingDown) {
+    console.log('⚠️  Shutdown already in progress...');
+    return;
+  }
+
+  isShuttingDown = true;
+  console.log(`\n\n⚠️  Received ${signal}. Starting graceful shutdown...`);
+
+  // Stop accepting new connections
+  httpServer.close(async () => {
+    console.log('✅ HTTP server closed - no new connections accepted');
+
+    // Close Socket.io connections
+    try {
+      await io.close();
+      console.log('✅ Socket.io server closed');
+    } catch (err) {
+      console.log('⚠️  Socket.io close warning:', err.message);
+    }
+
+    // Close database connection
+    try {
+      const mongoose = (await import('mongoose')).default;
       if (mongoose.connection.readyState === 1) {
-        mongoose.connection.close(false).then(() => {
-          console.log('✅ Database connection closed');
-          process.exit(0);
-        });
-      } else {
-        process.exit(0);
+        await mongoose.connection.close();
+        console.log('✅ Database connection closed');
       }
-    }).catch(() => {
-      process.exit(0);
-    });
+    } catch (err) {
+      console.log('⚠️  Database close warning:', err.message);
+    }
+
+    console.log('👋 Server shutdown complete. Goodbye!');
+
+    // Always exit with 0 (success) for graceful shutdown
+    // This prevents the ELIFECYCLE error
+    process.exit(0);
   });
-  
-  // Force shutdown after 10 seconds
-  setTimeout(() => {
-    console.error('❌ Forcefully shutting down');
+
+  // Force shutdown if graceful fails
+  const forceShutdownTimer = setTimeout(() => {
+    console.error('❌ Forceful shutdown due to timeout');
     process.exit(1);
-  }, 10000);
+  }, 10000); // 10 seconds timeout
+
+  // Clear timer if graceful shutdown completes
+  forceShutdownTimer.unref();
 };
 
-// Handle shutdown signals
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+// =============================================
+// Handle various shutdown signals
+// =============================================
 
-// Handle uncaught exceptions
+// SIGTERM (standard termination signal)
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+// SIGINT (Ctrl+C)
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// SIGQUIT (Ctrl+\)
+process.on('SIGQUIT', () => gracefulShutdown('SIGQUIT'));
+
+// =============================================
+// Handle uncaught exceptions and rejections
+// =============================================
+
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
-  gracefulShutdown();
+  // Log error but don't crash immediately
+  console.log('Attempting graceful shutdown after uncaught exception...');
+  gracefulShutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Log but don't crash
+  console.log('Continuing despite unhandled rejection...');
+});
+
+// =============================================
+// Prevent process from exiting unexpectedly
+// =============================================
+
+// Handle warning events
+process.on('warning', (warning) => {
+  console.warn('⚠️  Warning:', warning.name, warning.message);
+  if (warning.stack) {
+    console.warn(warning.stack);
+  }
 });
 
 // Start the server
