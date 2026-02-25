@@ -5,8 +5,23 @@ import { Order } from '@/types';
 
 export default function CustomerOrderPage() {
   // In a real app, you'd fetch this based on order ID from URL params
-  const order = orderSummaries[0] as Order;
-  
+  const summary = orderSummaries[0];
+  const order: Order = summary ? {
+    id: summary.id,
+    orderId: summary.id,
+    customer: {
+      name: summary.customer,
+      phone: '+234 800 000 0000',
+    },
+    status: summary.status as any,
+    fulfillment: summary.fulfillment === 'digital' ? 'delivery' : summary.fulfillment,
+    items: [
+      { name: 'Sample Item', quantity: 1, price: summary.total }
+    ],
+    total: summary.total,
+    createdAt: summary.createdAt,
+  } : null as any;
+
   if (!order) {
     return (
       <div className="p-6 max-w-5xl mx-auto text-center">

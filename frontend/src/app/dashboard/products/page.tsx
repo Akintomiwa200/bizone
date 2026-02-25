@@ -1,9 +1,18 @@
+"use client";
 import ProductGrid from '@/components/business/ProductGrid'
 import InventoryTable from '@/components/business/InventoryTable'
 import StockAlert from '@/components/business/StockAlert'
 import ProductForm from '@/components/business/ProductForm'
 
 export default function ProductsPage() {
+  const handleSubmit = async (data: any) => {
+    console.log('Product created/updated:', data);
+  };
+
+  const handleCancel = () => {
+    console.log('Cancelled product creation/update');
+  };
+
   return (
     <div className="space-y-6 p-6">
       <header className="space-y-1">
@@ -14,7 +23,7 @@ export default function ProductsPage() {
       <section className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
         <div className="space-y-6">
           <StockAlert />
-          <ProductForm />
+          <ProductForm onSubmit={handleSubmit} onCancel={handleCancel} />
         </div>
         <InventoryTable />
       </section>

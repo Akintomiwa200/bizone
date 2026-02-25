@@ -1,4 +1,7 @@
+'use client';
+import { useState, useEffect } from 'react';
 import { orderSummaries, OrderSummary } from '@/utils/mock-data'
+import { useSocket, useSocketEvent } from '@/hooks/useSocket'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
@@ -10,7 +13,41 @@ interface OrderListProps {
   orders?: OrderSummary[]
 }
 
-export default function OrderList({ orders = orderSummaries }: OrderListProps) {
+export default function OrderList({ orders: initialOrders = orderSummaries }: OrderListProps) {
+  const [orders, setOrders] = useState(initialOrders);
+  
+  // Initialize socket connection using a mock token for now
+  useSocket('mock-token');
+
+  useSocketEvent('new_order', (newOrder: any) => {
+    // Map backend newOrder format to frontend OrderSummary format
+    const mappedOrder: OrderSummary = {
+      id: newOrder.orderId || newOrder._id || `ORD-${Math.floor(Math.random() * 10000)}`,
+      customer: newOrder.customer?.name || 'Unknown Customer',
+      status: newOrder.status || 'pending',
+      fulfillment: newOrder.fulfillment || 'delivery',
+      total: newOrder.total || 0,
+      createdAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      paymentMethod: 'card'
+    };
+    
+    setOrders(prev => [mappedOrder, ...prev]);
+  });
+
+  useSocketEvent('order_updated', (updatedOrder: any) => {
+    const targetId = updatedOrder.orderId || updatedOrder._id;
+    setOrders(prev => prev.map(o => 
+      o.id === targetId ? { ...o, status: updatedOrder.status || o.status } : o
+    ));
+  });
+
+  useSocketEvent('status-changed', (updatedOrder: any) => {
+    const targetId = updatedOrder.orderId || updatedOrder._id;
+    setOrders(prev => prev.map(o => 
+      o.id === targetId ? { ...o, status: updatedOrder.status || o.status } : o
+    ));
+  });
+
   return (
     <div className="space-y-6">
       <OrderFilters />

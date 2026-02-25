@@ -2,11 +2,11 @@
 
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  TrendingUp, 
-  Package, 
-  Users, 
-  ShoppingCart, 
+import {
+  TrendingUp,
+  Package,
+  Users,
+  ShoppingCart,
   Truck,
   CreditCard,
   AlertCircle,
@@ -193,15 +193,15 @@ const CardContent = ({ children, className = '' }: { children: React.ReactNode; 
   </div>
 )
 
-const Button = ({ 
-  children, 
-  onClick, 
+const Button = ({
+  children,
+  onClick,
   variant = 'default',
   size = 'default',
   className = '',
   disabled = false
-}: { 
-  children: React.ReactNode; 
+}: {
+  children: React.ReactNode;
   onClick?: () => void;
   variant?: 'default' | 'outline' | 'ghost' | 'destructive';
   size?: 'default' | 'sm' | 'lg';
@@ -232,12 +232,12 @@ const Button = ({
   )
 }
 
-const Badge = ({ 
-  children, 
+const Badge = ({
+  children,
   variant = 'default',
   className = ''
-}: { 
-  children: React.ReactNode; 
+}: {
+  children: React.ReactNode;
   variant?: 'default' | 'secondary' | 'destructive' | 'outline';
   className?: string;
 }) => {
@@ -256,13 +256,13 @@ const Badge = ({
   )
 }
 
-const Input = ({ 
+const Input = ({
   value,
   onChange,
   placeholder,
   className = '',
   startIcon: StartIcon
-}: { 
+}: {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
@@ -279,21 +279,20 @@ const Input = ({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={`w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-          StartIcon ? 'pl-9' : ''
-        } ${className}`}
+        className={`w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${StartIcon ? 'pl-9' : ''
+          } ${className}`}
       />
     </div>
   )
 }
 
-const Select = ({ 
-  value, 
-  onValueChange, 
-  children 
-}: { 
-  value: string; 
-  onValueChange: (value: string) => void; 
+const Select = ({
+  value,
+  onValueChange,
+  children
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
   children: React.ReactNode;
 }) => {
   return (
@@ -434,7 +433,7 @@ export default function Dashboard() {
   const filteredOrders = useMemo(() => {
     return dashboardData.recentOrders.filter(order => {
       const matchesSearch = order.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          order.id.toLowerCase().includes(searchQuery.toLowerCase())
+        order.id.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesStatus = statusFilter === 'all' || order.status === statusFilter
       return matchesSearch && matchesStatus
     })
@@ -449,11 +448,11 @@ export default function Dashboard() {
   }
 
   // StatCard Component
-  const StatCard = ({ 
-    title, 
-    value, 
-    change, 
-    icon: Icon, 
+  const StatCard = ({
+    title,
+    value,
+    change,
+    icon: Icon,
     formatValue = (v: any) => v,
     description
   }: {
@@ -477,9 +476,8 @@ export default function Dashboard() {
               <p className="text-2xl font-bold text-gray-900 mb-2">
                 {formatValue(value)}
               </p>
-              <div className={`flex items-center text-sm ${
-                change >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
+              <div className={`flex items-center text-sm ${change >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
                 {change >= 0 ? (
                   <ArrowUp className="w-4 h-4 mr-1" />
                 ) : (
@@ -506,14 +504,14 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="text-3xl font-bold text-gray-900"
             >
               Business Overview
             </motion.h1>
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
@@ -522,7 +520,7 @@ export default function Dashboard() {
               Welcome back! Here's what's happening with your business today.
             </motion.p>
           </div>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3 flex-wrap"
@@ -540,8 +538,8 @@ export default function Dashboard() {
                 ))}
               </SelectContent>
             </Select>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="flex items-center gap-2"
@@ -549,7 +547,7 @@ export default function Dashboard() {
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button 
+            <Button
               onClick={handleExportData}
               className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
             >
@@ -610,7 +608,7 @@ export default function Dashboard() {
               Products
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="revenue">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -628,30 +626,30 @@ export default function Dashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={dashboardData.salesData}>
                       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis 
-                        dataKey="month" 
+                      <XAxis
+                        dataKey="month"
                         tick={{ fill: '#6B7280' }}
                         axisLine={{ stroke: '#E5E7EB' }}
                       />
-                      <YAxis 
+                      <YAxis
                         tick={{ fill: '#6B7280' }}
                         axisLine={{ stroke: '#E5E7EB' }}
                         tickFormatter={(value) => `₦${(value / 1000).toFixed(0)}K`}
                       />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value: any, name: any) => formatTooltipValue(Number(value), String(name))}
                         labelFormatter={(label) => `Month: ${label}`}
-                        contentStyle={{ 
-                          backgroundColor: 'white', 
+                        contentStyle={{
+                          backgroundColor: 'white',
                           border: '1px solid #E5E7EB',
                           borderRadius: '8px'
                         }}
                       />
                       <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="revenue" 
-                        stroke="#3B82F6" 
+                      <Line
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="#3B82F6"
                         strokeWidth={3}
                         dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
                         activeDot={{ r: 6, fill: '#1D4ED8' }}
@@ -663,7 +661,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="orders">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -681,33 +679,33 @@ export default function Dashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dashboardData.salesData}>
                       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis 
-                        dataKey="month" 
+                      <XAxis
+                        dataKey="month"
                         tick={{ fill: '#6B7280' }}
                         axisLine={{ stroke: '#E5E7EB' }}
                       />
-                      <YAxis 
+                      <YAxis
                         tick={{ fill: '#6B7280' }}
                         axisLine={{ stroke: '#E5E7EB' }}
                       />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value: any, name: any) => formatTooltipValue(Number(value), String(name))}
-                        contentStyle={{ 
-                          backgroundColor: 'white', 
+                        contentStyle={{
+                          backgroundColor: 'white',
                           border: '1px solid #E5E7EB',
                           borderRadius: '8px'
                         }}
                       />
                       <Legend />
-                      <Bar 
-                        dataKey="orders" 
-                        fill="#10B981" 
+                      <Bar
+                        dataKey="orders"
+                        fill="#10B981"
                         radius={[4, 4, 0, 0]}
                         name="Orders"
                       />
-                      <Bar 
-                        dataKey="customers" 
-                        fill="#8B5CF6" 
+                      <Bar
+                        dataKey="customers"
+                        fill="#8B5CF6"
                         radius={[4, 4, 0, 0]}
                         name="Customers"
                       />
@@ -717,7 +715,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="products">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
@@ -734,7 +732,7 @@ export default function Dashboard() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="sales"
@@ -761,8 +759,8 @@ export default function Dashboard() {
                     {dashboardData.topProducts.map((product, index) => (
                       <div key={product.name} className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                         <div className="flex items-center space-x-3">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
+                          <div
+                            className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: product.fill }}
                           />
                           <span className="font-medium text-sm">{product.name}</span>
@@ -829,10 +827,9 @@ export default function Dashboard() {
                     className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-all duration-200 group"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className={`w-3 h-3 rounded-full ${
-                        order.status === 'delivered' ? 'bg-green-500' :
-                        order.status === 'processing' ? 'bg-blue-500' : 'bg-yellow-500'
-                      }`} />
+                      <div className={`w-3 h-3 rounded-full ${order.status === 'delivered' ? 'bg-green-500' :
+                          order.status === 'processing' ? 'bg-blue-500' : 'bg-yellow-500'
+                        }`} />
                       <div>
                         <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                           {order.id}
@@ -848,9 +845,9 @@ export default function Dashboard() {
                         {order.status}
                       </Badge>
                       <p className="font-semibold text-gray-900">{formatCurrency(order.amount)}</p>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => handleViewOrder(order.id)}
                       >
@@ -892,9 +889,8 @@ export default function Dashboard() {
                       className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className={`w-2 h-2 rounded-full ${
-                          alert.status === 'critical' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
-                        }`} />
+                        <div className={`w-2 h-2 rounded-full ${alert.status === 'critical' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
+                          }`} />
                         <div>
                           <p className="font-medium text-gray-900">{alert.product}</p>
                           <p className="text-sm text-gray-500">
@@ -906,8 +902,8 @@ export default function Dashboard() {
                         <Badge className={stockStatusColors[alert.status]}>
                           {alert.status}
                         </Badge>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => handleReorderProduct(alert.product)}
                         >
@@ -1017,32 +1013,32 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex flex-col items-center justify-center h-20 p-4 bg-blue-50 hover:bg-blue-100 border-2 border-dashed border-blue-200 transition-all duration-200"
                   onClick={() => handleQuickAction('Add Product')}
                 >
                   <Package className="w-6 h-6 text-blue-600 mb-2" />
                   <span className="text-sm font-medium text-blue-700">Add Product</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex flex-col items-center justify-center h-20 p-4 bg-green-50 hover:bg-green-100 border-2 border-dashed border-green-200 transition-all duration-200"
                   onClick={() => handleQuickAction('Create Order')}
                 >
                   <ShoppingCart className="w-6 h-6 text-green-600 mb-2" />
                   <span className="text-sm font-medium text-green-700">Create Order</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex flex-col items-center justify-center h-20 p-4 bg-purple-50 hover:bg-purple-100 border-2 border-dashed border-purple-200 transition-all duration-200"
                   onClick={() => handleQuickAction('Schedule Delivery')}
                 >
                   <Truck className="w-6 h-6 text-purple-600 mb-2" />
                   <span className="text-sm font-medium text-purple-700">Schedule Delivery</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex flex-col items-center justify-center h-20 p-4 bg-orange-50 hover:bg-orange-100 border-2 border-dashed border-orange-200 transition-all duration-200"
                   onClick={() => handleQuickAction('View Reports')}
                 >

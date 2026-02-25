@@ -1,7 +1,17 @@
+"use client";
+
 import ProductForm from '@/components/business/ProductForm'
 import StockAlert from '@/components/business/StockAlert'
 
 export default function CreateProductPage() {
+  const handleSubmit = async (data: any) => {
+    console.log('Product created:', data);
+  };
+
+  const handleCancel = () => {
+    console.log('Cancelled product creation');
+  };
+
   return (
     <div className="space-y-6 p-6">
       <header className="space-y-1">
@@ -11,7 +21,7 @@ export default function CreateProductPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
         <StockAlert />
-        <ProductForm />
+        <ProductForm onSubmit={handleSubmit} onCancel={handleCancel} />
       </div>
     </div>
   )
