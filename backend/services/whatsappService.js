@@ -366,7 +366,7 @@ export const whatsappService = {
   },
 
   // Process incoming webhook
-  async processWebhook(webhookData) {
+  async processWebhook(webhookData, io) {
     try {
       const entry = webhookData.entry?.[0];
       const changes = entry?.changes?.[0];
@@ -379,7 +379,7 @@ export const whatsappService = {
       // Handle messages
       if (value.messages) {
         for (const message of value.messages) {
-          await this.handleIncomingMessage(message, value.contacts?.[0]);
+          await this.handleIncomingMessage(message, value.contacts?.[0], io);
         }
       }
 
@@ -398,7 +398,7 @@ export const whatsappService = {
   },
 
   // Handle incoming message
-  async handleIncomingMessage(message, contact) {
+  async handleIncomingMessage(message, contact, io) {
     try {
       // Find business by phone number ID
       const business = await Business.findOne({
@@ -443,7 +443,7 @@ export const whatsappService = {
 
       // Route message to conversational bot engine
       const { whatsappBotService } = await import('./whatsappBotService.js');
-      await whatsappBotService.handleIncomingMessage(message, business._id);
+      await whatsappBotService.handleIncomingMessage(message, business._id, io);
 
       return { success: true };
     } catch (error) {

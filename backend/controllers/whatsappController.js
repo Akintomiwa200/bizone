@@ -284,7 +284,8 @@ export const handleWebhook = async (req, res) => {
     res.status(200).send('OK');
 
     // Process webhook asynchronously
-    whatsappService.processWebhook(req.body).catch(error => {
+    const io = req.app.get('io');
+    whatsappService.processWebhook(req.body, io).catch(error => {
       console.error('Error processing webhook:', error);
     });
   } catch (error) {
@@ -303,7 +304,7 @@ export const markAsRead = async (req, res) => {
   try {
     const { phone } = req.params;
     const business = await Business.findOne({ owner: req.user._id });
-    
+
     if (!business) {
       return res.status(404).json({
         success: false,

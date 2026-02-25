@@ -5,7 +5,7 @@ import { whatsappService } from './whatsappService.js';
 
 export const whatsappBotService = {
     // Main entry point for the bot logic
-    async handleIncomingMessage(messageData, businessId) {
+    async handleIncomingMessage(messageData, businessId, io) {
         const phone = messageData.from;
         const textContent = messageData.text?.body || '';
 
@@ -40,6 +40,10 @@ export const whatsappBotService = {
         });
         await user.save();
 
+        if (io) {
+           io.emit('new_user', user);
+        }
+
         const successMessage = \`Registration successful as a *\${role}*! 🎉\n\nYour virtual wallet has been created.\n🏦 Account No: \${mockAccount}\n🏦 Bank: Bizone Virtual Wallet\n\nYou can now type commands like:\n- "Check account balance"\n- "Buy yam within 10km"\n\n*Please share your WhatsApp Location Pin so we can match you locally!*\`;
         await whatsappService.sendTextMessage(phone, successMessage, businessId);
       } else {
@@ -63,6 +67,10 @@ export const whatsappBotService = {
 
     // 3. Command Parsing for generic text
     if (messageData.type === 'text') {
+      if (io) {
+         io.emit('new_message', { phone, text: textContent, businessId, timestamp: new Date() });
+      }
+      
       const parsedCommand = parseCommand(textContent);
 
       switch (parsedCommand.intent) {
@@ -182,29 +190,98 @@ export const whatsappBotService = {
             await whatsappService.sendTextMessage(phone, "Only registered Farmers can list products for sale.", businessId);
           } else {
             const { item, price } = parsedCommand.data;
+            
+            const newProduct = new Product({
+              business: businessId,
+              name: item,
+              category: 'Produce', 
+              price: price,
+              location: user.location,
+              status: 'active'
+            });
+            await newProduct.save();
+
+            if (io) {
+              io.emit('new_product', newProduct);
+            }
+
             await whatsappService.sendTextMessage(phone, \`Added *\${item}* for NGN \${price} to your storefront! ✅\`, businessId);
-            // TODO: Actually create Product record 
           }
           break;
 
         case 'VIEW_PRODUCTS':
-          await whatsappService.sendTextMessage(phone, "Here are your active products:\n\n1. Yam - NGN 5000\n2. Cassava - NGN 3000", businessId);
+          const myProducts = await Product.find({ business: businessId, status: 'active' }).limit(10);
+          if (myProducts.length === 0) {
+             await whatsappService.sendTextMessage(phone, "You have no active products.", businessId);
+          } else {
+             let prodStr = "Here are your active products:\n\n";
+             myProducts.forEach((p, idx) => prodStr += \`\${idx+1}. \${p.name} - NGN \${p.price}\n\`);
+             await whatsappService.sendTextMessage(phone, prodStr, businessId);
+          }
           break;
 
         case 'MAKE_OFFER':
           if (user.botState.status !== 'AWAITING_SELECTION' && user.botState.status !== 'NEGOTIATING') {
             await whatsappService.sendTextMessage(phone, "Please search for a product first before making an offer.", businessId);
           } else {
-            await whatsappService.sendTextMessage(phone, \`Offer of NGN \${parsedCommand.data.amount} sent to the farmer! Waiting for response... ⏳\`, businessId);
+            const amount = parsedCommand.data.amount;
+            const productId = user.botState.tempData?.products?.[0]; // Mocking selection to the first product matched
+            
+            if (!productId) {
+               await whatsappService.sendTextMessage(phone, "No product selected.", businessId);
+               break;
+            }
+
+            const { default: Order } = await import('../models/Order.js');
+            const product = await Product.findById(productId);
+
+            if (!product) {
+               await whatsappService.sendTextMessage(phone, "Product not found.", businessId);
+               break;
+            }
+
+            const newOrder = new Order({
+               business: product.business, // Ensure this points to the farmer's business
+               customer: { name: user.name, phone: user.phone },
+               items: [{ product: product._id, quantity: 1, price: amount, total: amount }],
+               subtotal: amount,
+               total: amount,
+               status: 'pending'
+            });
+            await newOrder.save();
+            
+            if (io) {
+               io.emit('new_order', newOrder);
+            }
+
+            await whatsappService.sendTextMessage(phone, \`Offer of NGN \${amount} sent to the farmer for *\${product.name}*! Waiting for response... ⏳\nOrder Ref: *\${newOrder.orderNumber}*\`, businessId);
           }
           break;
 
         case 'ACCEPT_OFFER':
-          await whatsappService.sendTextMessage(phone, \`Offer \${parsedCommand.data.offerId} accepted! Proceeding to fulfillment.\`, businessId);
+          const { default: OrderModelAccept } = await import('../models/Order.js');
+          const acceptedOrder = await OrderModelAccept.findOne({ orderNumber: new RegExp(parsedCommand.data.offerId, 'i') });
+          if (acceptedOrder) {
+             acceptedOrder.status = 'confirmed';
+             await acceptedOrder.save();
+             if (io) io.emit('order_updated', acceptedOrder);
+             await whatsappService.sendTextMessage(phone, \`Offer \${parsedCommand.data.offerId} accepted! Proceeding to fulfillment.\`, businessId);
+          } else {
+             await whatsappService.sendTextMessage(phone, \`Order \${parsedCommand.data.offerId} not found.\`, businessId);
+          }
           break;
           
         case 'REJECT_OFFER':
-          await whatsappService.sendTextMessage(phone, \`Offer \${parsedCommand.data.offerId} rejected.\`, businessId);
+          const { default: OrderModelReject } = await import('../models/Order.js');
+          const rejectedOrder = await OrderModelReject.findOne({ orderNumber: new RegExp(parsedCommand.data.offerId, 'i') });
+          if (rejectedOrder) {
+             rejectedOrder.status = 'cancelled';
+             await rejectedOrder.save();
+             if (io) io.emit('order_updated', rejectedOrder);
+             await whatsappService.sendTextMessage(phone, \`Offer \${parsedCommand.data.offerId} rejected.\`, businessId);
+          } else {
+             await whatsappService.sendTextMessage(phone, \`Order \${parsedCommand.data.offerId} not found.\`, businessId);
+          }
           break;
 
         case 'VIEW_ORDERS':
