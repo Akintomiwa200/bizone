@@ -2,7 +2,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { deliverySummaries } from '@/utils/mock-data'
 import { CheckCircle2, Circle, Clock, Truck } from 'lucide-react'
 
-const timeline = [
+// Define the possible status types
+type TimelineStatus = 'completed' | 'current' | 'upcoming'
+
+interface TimelineItem {
+  id: number
+  title: string
+  description: string
+  time: string
+  status: TimelineStatus
+}
+
+const timeline: TimelineItem[] = [
   {
     id: 1,
     title: 'Order placed',
@@ -40,10 +51,18 @@ const timeline = [
   }
 ]
 
-const statusIcon: Record<string, JSX.Element> = {
-  completed: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
-  current: <Truck className="h-5 w-5 text-blue-500 animate-pulse" />,
-  upcoming: <Circle className="h-5 w-5 text-gray-300" />
+// Function to render icon based on status (replaces statusIcon object)
+const renderStatusIcon = (status: TimelineStatus) => {
+  switch (status) {
+    case 'completed':
+      return <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+    case 'current':
+      return <Truck className="h-5 w-5 text-blue-500 animate-pulse" />
+    case 'upcoming':
+      return <Circle className="h-5 w-5 text-gray-300" />
+    default:
+      return null
+  }
 }
 
 export default function TrackingView() {
@@ -73,9 +92,9 @@ export default function TrackingView() {
           {timeline.map((item, index) => (
             <div key={item.id} className="flex items-start gap-3">
               <div className="flex flex-col items-center">
-                {statusIcon[item.status]}
+                {renderStatusIcon(item.status)}
                 {index !== timeline.length - 1 && (
-                  <span className="block w-px h-10 bg-gray-200 mt-1"></span>
+                  <div className="w-px h-10 bg-gray-200 mt-1"></div>
                 )}
               </div>
               <div className="space-y-1">
@@ -90,4 +109,3 @@ export default function TrackingView() {
     </Card>
   )
 }
-
