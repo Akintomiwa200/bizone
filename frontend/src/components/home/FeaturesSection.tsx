@@ -4,12 +4,12 @@ import { motion } from 'framer-motion'
 import { useInView } from 'framer-motion'
 import { useRef } from 'react'
 import Button from '@/components/ui/Button'
-import { 
-  Store, 
-  CreditCard, 
-  Truck, 
-  BarChart3, 
-  Shield, 
+import {
+  Store,
+  CreditCard,
+  Truck,
+  BarChart3,
+  Shield,
   Zap,
   ArrowRight,
   Smartphone,
@@ -25,7 +25,7 @@ import {
 
 const FeaturesSection = () => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, threshold: 0.1 })
+  const isInView = useInView(ref, { once: true })
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -195,7 +195,7 @@ const FeaturesSection = () => {
             </span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Comprehensive tools and features designed specifically to address the unique challenges 
+            Comprehensive tools and features designed specifically to address the unique challenges
             faced by Nigerian small and medium businesses
           </p>
         </motion.div>
@@ -211,7 +211,7 @@ const FeaturesSection = () => {
             <motion.div
               key={index}
               variants={itemVariants}
-              whileHover={{ 
+              whileHover={{
                 y: -8,
                 transition: { duration: 0.3 }
               }}
@@ -232,7 +232,7 @@ const FeaturesSection = () => {
                 <h3 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-gray-800 transition-colors">
                   {feature.title}
                 </h3>
-                
+
                 <p className="text-gray-600 mb-6 leading-relaxed flex-grow">
                   {feature.description}
                 </p>
