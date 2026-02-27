@@ -13,11 +13,11 @@ import { useRouter } from 'next/navigation'
    Add/change these to match your sections.
 ───────────────────────────────────────── */
 const SECTION_COLORS: Record<string, string> = {
-  hero:      'bg-white',
-  features:  'bg-gray-50',
+  hero: 'bg-white',
+  features: 'bg-gray-50',
   solutions: 'bg-green-50',
-  pricing:   'bg-white',
-  about:     'bg-emerald-900',   // example dark section
+  pricing: 'bg-white',
+  about: 'bg-emerald-900',   // example dark section
 }
 
 const DEFAULT_BG = 'bg-white'
@@ -25,7 +25,7 @@ const DEFAULT_BG = 'bg-white'
 /* ─────────────────────────────────────────
    Detect which section is in the viewport
 ───────────────────────────────────────── */
-function useActiveSectionBg (): string {
+function useActiveSectionBg(): string {
   const [bg, setBg] = useState(DEFAULT_BG)
 
   useEffect(() => {
@@ -57,10 +57,10 @@ function useActiveSectionBg (): string {
    Header
 ───────────────────────────────────────── */
 const Header = () => {
-  const [mobileOpen, setMobileOpen]   = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [scrolled, setScrolled]       = useState(false)
-  const sectionBg                     = useActiveSectionBg()
+  const [scrolled, setScrolled] = useState(false)
+  const sectionBg = useActiveSectionBg()
 
   const { isAuthenticated, user, logout } = useAuth()
   const router = useRouter()
@@ -73,10 +73,10 @@ const Header = () => {
   }, [])
 
   const nav = [
-    { name: 'Features',  href: '#features'  },
+    { name: 'Features', href: '#features' },
     { name: 'Solutions', href: '#solutions' },
-    { name: 'Pricing',   href: '#pricing'   },
-    { name: 'About',     href: '#about'     },
+    { name: 'Pricing', href: '#pricing' },
+    { name: 'About', href: '#about' },
   ]
 
   const go = (path: string) => {
@@ -94,9 +94,9 @@ const Header = () => {
 
   /* Derive text colour from section background */
   const isDark = sectionBg.includes('emerald-900') || sectionBg.includes('gray-900')
-  const textColor  = isDark ? 'text-white/90'  : 'text-gray-700'
-  const hoverText  = isDark ? 'hover:text-white' : 'hover:text-green-600'
-  const logoText   = isDark ? 'text-white'      : 'text-gray-900'
+  const textColor = isDark ? 'text-white/90' : 'text-gray-700'
+  const hoverText = isDark ? 'hover:text-white' : 'hover:text-green-600'
+  const logoText = isDark ? 'text-white' : 'text-gray-900'
 
   return (
     <motion.header
@@ -166,7 +166,7 @@ const Header = () => {
                         <p className="text-xs font-semibold text-gray-900">{user?.name}</p>
                         <p className="text-xs text-gray-400 truncate">{user?.email}</p>
                       </div>
-                      <button onClick={() => go(ROUTES.DASHBOARD)} className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg mx-auto transition-colors">
+                      <button onClick={() => go(ROUTES.DASHBOARD.OVERVIEW)} className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg mx-auto transition-colors">
                         <LayoutDashboard className="w-4 h-4 mr-2 text-gray-400" /> Dashboard
                       </button>
                       <button onClick={handleLogout} className="flex items-center w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors">
@@ -228,7 +228,7 @@ const Header = () => {
                 <div className="pt-3 border-t border-black/5 space-y-2">
                   {isAuthenticated ? (
                     <>
-                      <Button className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl" onClick={() => go(ROUTES.DASHBOARD)}>
+                      <Button className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl" onClick={() => go(ROUTES.DASHBOARD.OVERVIEW)}>
                         <LayoutDashboard className="w-4 h-4 mr-2" /> Dashboard
                       </Button>
                       <Button variant="outline" className="w-full border-gray-200 rounded-xl text-red-500" onClick={handleLogout}>
