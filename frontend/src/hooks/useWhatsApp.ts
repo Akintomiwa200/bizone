@@ -48,7 +48,7 @@ export const useWhatsApp = () => {
     try {
       await whatsappAPI.sendMessage(data);
       notificationService.success('Message Sent', 'WhatsApp message has been sent successfully');
-      
+
       // Refresh messages for this contact
       await fetchMessages(data.to);
     } catch (error: any) {
@@ -70,6 +70,7 @@ export const useWhatsApp = () => {
         type: 'template',
         templateName,
         templateParameters: parameters,
+        content: '', // Added to satisfy SendMessageData type
       });
       notificationService.success('Template Sent', 'WhatsApp template message has been sent successfully');
     } catch (error: any) {
@@ -110,7 +111,7 @@ export const useWhatsApp = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await whatsappAPI.getMessages(contact, page, limit);
+      const response = await whatsappAPI.getMessages(contact, page, limit) as any;
       setMessages(response.messages);
       setPagination({
         page: response.page,
@@ -163,7 +164,7 @@ export const useWhatsApp = () => {
     try {
       await whatsappAPI.createTemplate(template);
       notificationService.success('Template Created', 'WhatsApp template has been created successfully');
-      
+
       // Refresh templates list
       await fetchTemplates();
     } catch (error: any) {
@@ -182,7 +183,7 @@ export const useWhatsApp = () => {
     try {
       await whatsappAPI.deleteTemplate(templateName);
       notificationService.success('Template Deleted', 'WhatsApp template has been deleted successfully');
-      
+
       // Refresh templates list
       await fetchTemplates();
     } catch (error: any) {
@@ -246,11 +247,11 @@ export const useWhatsApp = () => {
 
     messages.forEach(message => {
       const threadKey = message.direction === 'inbound' ? message.from : message.to;
-      
+
       if (!threads[threadKey]) {
         threads[threadKey] = [];
       }
-      
+
       threads[threadKey].push(message);
     });
 
@@ -264,7 +265,7 @@ export const useWhatsApp = () => {
 
   // Memoized unread message count
   const unreadCount = useMemo(() => {
-    return messages.filter(message => 
+    return messages.filter(message =>
       message.direction === 'inbound' && message.status === 'delivered'
     ).length;
   }, [messages]);

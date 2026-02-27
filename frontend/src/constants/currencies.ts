@@ -273,7 +273,7 @@ export const formatCurrencyCompact = (
   currencyCode: string = 'NGN'
 ): string => {
   const currency = CURRENCIES[currencyCode] || CURRENCIES.NGN;
-  
+
   try {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
@@ -351,7 +351,7 @@ export const isValidCurrencyCode = (code: string): boolean => {
 
 export const parseCurrency = (value: string, currencyCode: string = 'NGN'): number => {
   const currency = CURRENCIES[currencyCode] || CURRENCIES.NGN;
-  
+
   // Remove currency symbol and thousands separators
   let cleaned = value
     .replace(new RegExp(`\\${currency.symbol}`, 'g'), '')
@@ -382,27 +382,27 @@ export const getCurrencyInfo = (currencyCode: string): Currency => {
 
 // Nigerian money formatting (local conventions)
 export const formatNaira = (amount: number, compact: boolean = false): string => {
-  return compact 
+  return compact
     ? formatCurrencyCompact(amount, 'NGN')
     : formatCurrency(amount, 'NGN');
 };
 
 export const formatNairaWords = (amount: number): string => {
   if (amount === 0) return 'Zero Naira';
-  
+
   const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
   const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
   const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-  
+
   const convertHundreds = (num: number): string => {
     if (num === 0) return '';
     let result = '';
-    
+
     if (num >= 100) {
       result += units[Math.floor(num / 100)] + ' Hundred ';
       num %= 100;
     }
-    
+
     if (num >= 20) {
       result += tens[Math.floor(num / 10)] + ' ';
       num %= 10;
@@ -410,44 +410,44 @@ export const formatNairaWords = (amount: number): string => {
       result += teens[num - 10] + ' ';
       num = 0;
     }
-    
+
     if (num > 0) {
       result += units[num] + ' ';
     }
-    
+
     return result.trim();
   };
-  
+
   let result = '';
-  const wholeAmount = Math.floor(amount);
-  
+  let wholeAmount = Math.floor(amount);
+
   if (wholeAmount >= 1000000000) {
     result += convertHundreds(Math.floor(wholeAmount / 1000000000)) + ' Billion ';
     wholeAmount %= 1000000000;
   }
-  
+
   if (wholeAmount >= 1000000) {
     result += convertHundreds(Math.floor(wholeAmount / 1000000)) + ' Million ';
     wholeAmount %= 1000000;
   }
-  
+
   if (wholeAmount >= 1000) {
     result += convertHundreds(Math.floor(wholeAmount / 1000)) + ' Thousand ';
     wholeAmount %= 1000;
   }
-  
+
   if (wholeAmount > 0) {
     result += convertHundreds(wholeAmount);
   }
-  
+
   result = result.trim() + ' Naira';
-  
+
   // Add kobo if there are decimals
   const kobo = Math.round((amount - Math.floor(amount)) * 100);
   if (kobo > 0) {
     result += ` and ${kobo} Kobo`;
   }
-  
+
   return result;
 };
 

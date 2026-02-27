@@ -22,6 +22,37 @@ export interface Order {
   // ... other fields
 }
 
+export interface User {
+  id: string;
+  name?: string;
+  email: string;
+  businessName?: string;
+  role?: 'admin' | 'manager' | 'staff' | 'user' | 'rider' | 'customer';
+  avatar?: string;
+}
+
+export interface Business {
+  id: string;
+  name: string;
+  ownerId: string;
+}
+
+export interface LoginData {
+  email: string;
+  password?: string;
+}
+
+export interface RegisterData {
+  email: string;
+  name?: string;
+  password?: string;
+}
+
+export interface CreateBusinessData {
+  name: string;
+  description?: string;
+}
+
 // Add these new types for products
 export interface Product {
   id: string;
@@ -51,7 +82,6 @@ export interface CreateProductData {
   inventory: {
     trackQuantity: boolean;
     quantity: number;
-    lowStockAlert?: number;
   };
   images?: File[];
 }

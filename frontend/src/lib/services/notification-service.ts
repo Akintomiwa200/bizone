@@ -26,7 +26,6 @@ class NotificationService {
     const { addNotification } = useStore.getState()
 
     addNotification({
-      id: Date.now().toString(),
       type,
       title,
       message,

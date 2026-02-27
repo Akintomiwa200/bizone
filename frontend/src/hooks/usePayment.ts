@@ -59,13 +59,13 @@ export const usePayment = () => {
     setError(null);
     try {
       const payment = await paymentAPI.verifyPayment({ reference, provider });
-      
+
       if (payment.status === 'completed') {
         notificationService.success('Payment Successful', 'Your payment has been processed successfully.');
       } else if (payment.status === 'failed') {
         notificationService.error('Payment Failed', 'Your payment could not be processed.');
       }
-      
+
       return payment;
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to verify payment';
@@ -81,7 +81,7 @@ export const usePayment = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await paymentAPI.getPayments(page, limit, status);
+      const response = await paymentAPI.getPayments(page, limit, status as any);
       setPayments(response.payments);
       setPagination({
         page: response.page,
@@ -121,7 +121,7 @@ export const usePayment = () => {
     try {
       await paymentAPI.refundPayment(paymentId, amount);
       notificationService.success('Refund Initiated', 'Payment refund has been processed successfully.');
-      
+
       // Refresh the payment details
       await fetchPayment(paymentId);
     } catch (error: any) {

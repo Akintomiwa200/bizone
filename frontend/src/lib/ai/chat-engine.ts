@@ -9,6 +9,7 @@ export interface ChatEngineConfig {
   tone: 'professional' | 'friendly' | 'casual';
   maxHistory: number;
   enableSuggestions: boolean;
+  includeEmojis?: boolean;
 }
 
 export class ChatEngine {
@@ -43,10 +44,10 @@ export class ChatEngine {
   }> {
     // Preprocess the message
     const processedMessage = await this.nlpProcessor.process(message);
-    
+
     // Recognize intent
     const intentResult = await this.intentRecognizer.recognize(processedMessage, context);
-    
+
     // Generate response
     const response = await this.responseGenerator.generate(
       processedMessage,

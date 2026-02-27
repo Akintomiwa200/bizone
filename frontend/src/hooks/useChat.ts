@@ -19,6 +19,7 @@ export interface UseChatReturn {
   clearSession: (sessionId: string) => Promise<void>;
   fetchSessions: () => Promise<void>;
   getSuggestions: () => Promise<string[]>;
+  analyzeIntent: (message: string) => Promise<any>;
   clearError: () => void;
 }
 

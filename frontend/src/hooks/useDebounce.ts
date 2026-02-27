@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 export const useDebounce = <T>(value: T, delay: number): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     timeoutRef.current = setTimeout(() => {
@@ -30,7 +30,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   options: UseDebouncedCallbackOptions
 ): ((...args: Parameters<T>) => void) => {
   const { delay, leading = false, trailing = true } = options;
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const callbackRef = useRef<T>(callback);
   const lastExecutedRef = useRef<number>(0);
 
@@ -106,7 +106,7 @@ export const useDebouncedState = <T>(
   const [value, setValue] = useState<T>(initialValue);
   const [debouncedValue, setDebouncedValue] = useState<T>(initialValue);
   const [isDebouncing, setIsDebouncing] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     setIsDebouncing(true);

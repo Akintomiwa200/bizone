@@ -2,12 +2,12 @@
 
 import { motion } from 'framer-motion'
 import { ROUTES } from '@/lib/routes'
-import { 
-  Building, 
-  Twitter, 
-  Linkedin, 
-  Mail, 
-  Phone, 
+import {
+  Building,
+  Twitter,
+  Linkedin,
+  Mail,
+  Phone,
   MapPin,
   ArrowUp,
   Heart
@@ -46,13 +46,13 @@ const Footer = () => {
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   }
 
   return (
-    <motion.footer 
+    <motion.footer
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, threshold: 0.1 }}
@@ -78,10 +78,10 @@ const Footer = () => {
               <h3 className="text-2xl font-bold">Bizone</h3>
             </div>
             <p className="text-gray-300 mb-6 leading-relaxed">
-              Empowering Nigerian MSMEs with integrated business solutions for digital transformation, 
+              Empowering Nigerian MSMEs with integrated business solutions for digital transformation,
               financial inclusion, and sustainable growth.
             </p>
-            
+
             {/* Contact Info */}
             <div className="space-y-3 mb-6">
               <div className="flex items-center gap-3 text-gray-300">
@@ -210,7 +210,7 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           className="border-t border-gray-700 py-8 flex flex-col md:flex-row justify-between items-center"
         >
@@ -218,7 +218,7 @@ const Footer = () => {
             <span>© {currentYear} Bizone Platform. All rights reserved.</span>
             <Heart className="h-4 w-4 text-red-400" />
           </div>
-          
+
           <div className="flex items-center gap-6 text-sm text-gray-300">
             <a href="#" className="hover:text-blue-400 transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-blue-400 transition-colors">Terms of Service</a>

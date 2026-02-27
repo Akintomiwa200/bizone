@@ -4,12 +4,12 @@ import { motion } from 'framer-motion'
 import { useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/Card'
-import { 
-  Star, 
-  MapPin, 
-  Quote, 
-  TrendingUp, 
-  Truck, 
+import {
+  Star,
+  MapPin,
+  Quote,
+  TrendingUp,
+  Truck,
   CreditCard,
   Zap,
   Award,
@@ -37,7 +37,7 @@ const TestimonialsSection = () => {
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   }
@@ -95,10 +95,9 @@ const TestimonialsSection = () => {
             animate={{ scale: 1, rotate: 0 }}
             transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
           >
-            <Star 
-              className={`w-5 h-5 ${
-                i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-              }`} 
+            <Star
+              className={`w-5 h-5 ${i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                }`}
             />
           </motion.div>
         ))}
@@ -171,7 +170,7 @@ const TestimonialsSection = () => {
             <motion.div
               key={index}
               variants={itemVariants}
-              whileHover={{ 
+              whileHover={{
                 y: -8,
                 transition: { duration: 0.3 }
               }}
@@ -240,7 +239,7 @@ const TestimonialsSection = () => {
           transition={{ delay: 0.8 }}
           className="mt-20 text-center"
         >
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : {}}
             transition={{ delay: 1 }}
@@ -248,8 +247,8 @@ const TestimonialsSection = () => {
           >
             Featured in leading publications
           </motion.p>
-          
-          <motion.div 
+
+          <motion.div
             className="flex flex-wrap justify-center items-center gap-12 opacity-70"
             variants={containerVariants}
             initial="hidden"
@@ -259,7 +258,7 @@ const TestimonialsSection = () => {
               <motion.div
                 key={index}
                 variants={itemVariants}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.1,
                   opacity: 1,
                   transition: { duration: 0.3 }

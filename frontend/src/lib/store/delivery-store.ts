@@ -39,7 +39,7 @@ export const deliveryStore: StateCreator<DeliveryState> = (set, get) => ({
   fetchDeliveries: async (page = 1, limit = 20, status) => {
     set({ deliveriesLoading: true, deliveriesError: null });
     try {
-      const response = await deliveryAPI.getDeliveries(page, limit, status);
+      const response = await deliveryAPI.getDeliveries(page, limit, status as any) as any;
       set({
         deliveries: response.deliveries,
         deliveriesPagination: {
@@ -128,7 +128,7 @@ export const deliveryStore: StateCreator<DeliveryState> = (set, get) => ({
   updateDeliveryStatus: async (deliveryId: string, status: string) => {
     set({ deliveriesLoading: true, deliveriesError: null });
     try {
-      const delivery = await deliveryAPI.updateDeliveryStatus(deliveryId, status);
+      const delivery = await deliveryAPI.updateDeliveryStatus(deliveryId, status as any);
       set((state) => ({
         deliveries: state.deliveries.map((d) => (d.id === deliveryId ? delivery : d)),
         currentDelivery: state.currentDelivery?.id === deliveryId ? delivery : state.currentDelivery,

@@ -103,6 +103,7 @@ export class WhatsAppAIIntegration {
         type: 'template',
         templateName: template,
         templateParameters: parameters,
+        content: '', // Added to satisfy SendMessageData type
       });
     } catch (error) {
       console.error('Failed to send automated WhatsApp message:', error);
@@ -151,7 +152,7 @@ export class WhatsAppAIIntegration {
     let responseCount = 0;
 
     for (let i = 1; i < messages.length; i++) {
-      if (messages[i].role === 'assistant' && messages[i-1].role === 'user') {
+      if (messages[i].role === 'assistant' && messages[i - 1].role === 'user') {
         // In practice, you'd calculate actual time differences
         totalResponseTime += 1; // Placeholder
         responseCount++;
@@ -202,7 +203,7 @@ export class WhatsAppAIIntegration {
         'glad I could help',
         'anything else?'
       ];
-      
+
       if (closingPhrases.some(phrase => lastMessage.content.toLowerCase().includes(phrase))) {
         return true;
       }
