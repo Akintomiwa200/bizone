@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Product, CreateProductData } from '@/types';
@@ -17,6 +16,12 @@ export default function ProductForm({
   isLoading = false 
 }: ProductFormProps) {
   const isEditing = !!product;
+  
+  // Separate state for existing images (URLs) and new images (Files)
+  const [existingImages, setExistingImages] = useState<string[]>(product?.images || []);
+  const [newImages, setNewImages] = useState<File[]>([]);
+
+  // Fix: Handle the type mismatch by creating a compatible defaultValues object
   const { register, handleSubmit, formState: { errors } } = useForm<CreateProductData>({
     defaultValues: product ? {
       name: product.name,
@@ -25,40 +30,53 @@ export default function ProductForm({
       price: product.price,
       comparePrice: product.comparePrice,
       costPerItem: product.costPerItem,
+      // Don't include images in defaultValues since they're handled separately
       inventory: {
         trackQuantity: product.inventory.trackQuantity,
         quantity: product.inventory.quantity,
-        lowStockAlert: product.inventory.lowStockAlert
+        ...(product.inventory.lowStockAlert !== undefined && { 
+          lowStockAlert: product.inventory.lowStockAlert 
+        })
       }
-    } : {}
+    } : {
+      name: '',
+      description: '',
+      category: '',
+      price: 0,
+      comparePrice: undefined,
+      costPerItem: undefined,
+      inventory: {
+        trackQuantity: false,
+        quantity: 0,
+        lowStockAlert: undefined
+      }
+      // images is omitted from defaultValues
+    }
   });
 
-  const [images, setImages] = useState<File[]>([]);
-
   const handleFormSubmit = async (data: CreateProductData) => {
-    const formData = new FormData();
+    // Create a complete CreateProductData object
+    const submitData: CreateProductData = {
+      ...data,
+      // Combine existing image URLs and new files
+      images: [...existingImages, ...newImages]
+    };
     
-    // Append basic fields
-    Object.keys(data).forEach(key => {
-      if (key === 'inventory') {
-        formData.append(key, JSON.stringify(data[key]));
-      } else {
-        formData.append(key, data[key as keyof CreateProductData] as string);
-      }
-    });
-
-    // Append images
-    images.forEach(image => {
-      formData.append('images', image);
-    });
-
-    await onSubmit(data);
+    await onSubmit(submitData);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setImages(Array.from(e.target.files));
+      setNewImages(Array.from(e.target.files));
     }
+  };
+
+  const removeExistingImage = (indexToRemove: number) => {
+    setExistingImages(existingImages.filter((_, index) => index !== indexToRemove));
+  };
+
+  const removeNewImage = (indexToRemove: number) => {
+    setNewImages(newImages.filter((_, index) => index !== indexToRemove));
   };
 
   return (
@@ -128,6 +146,7 @@ export default function ProductForm({
             min="0"
             {...register('price', { 
               required: 'Price is required',
+              valueAsNumber: true,
               min: { value: 0, message: 'Price must be positive' }
             })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -147,7 +166,7 @@ export default function ProductForm({
             id="comparePrice"
             step="0.01"
             min="0"
-            {...register('comparePrice')}
+            {...register('comparePrice', { valueAsNumber: true })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
@@ -162,7 +181,7 @@ export default function ProductForm({
             id="costPerItem"
             step="0.01"
             min="0"
-            {...register('costPerItem')}
+            {...register('costPerItem', { valueAsNumber: true })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
@@ -191,7 +210,7 @@ export default function ProductForm({
             type="number"
             id="quantity"
             min="0"
-            {...register('inventory.quantity')}
+            {...register('inventory.quantity', { valueAsNumber: true })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
@@ -205,7 +224,7 @@ export default function ProductForm({
             type="number"
             id="lowStockAlert"
             min="0"
-            {...register('inventory.lowStockAlert')}
+            {...register('inventory.lowStockAlert', { valueAsNumber: true })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
@@ -223,6 +242,60 @@ export default function ProductForm({
             onChange={handleImageChange}
             className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
+          
+          {/* Existing Images Preview */}
+          {existingImages.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">Existing Images</p>
+              <div className="flex gap-2 flex-wrap">
+                {existingImages.map((image, index) => (
+                  <div key={`existing-${index}`} className="relative group">
+                    <img 
+                      src={image} 
+                      alt={`Product ${index + 1}`}
+                      className="h-20 w-20 object-cover rounded-md border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* New Images Preview */}
+          {newImages.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">New Images</p>
+              <div className="flex gap-2 flex-wrap">
+                {newImages.map((image, index) => (
+                  <div key={`new-${index}`} className="relative group">
+                    <img 
+                      src={URL.createObjectURL(image)} 
+                      alt={`New ${index + 1}`}
+                      className="h-20 w-20 object-cover rounded-md border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeNewImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
