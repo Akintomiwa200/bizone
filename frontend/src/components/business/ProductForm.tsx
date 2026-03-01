@@ -20,8 +20,8 @@ export default function ProductForm({
   // Separate state for existing images (URLs) and new images (Files)
   const [existingImages, setExistingImages] = useState<string[]>(product?.images || []);
   const [newImages, setNewImages] = useState<File[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
-  // Fix: Handle the type mismatch by creating a compatible defaultValues object
   const { register, handleSubmit, formState: { errors } } = useForm<CreateProductData>({
     defaultValues: product ? {
       name: product.name,
@@ -30,7 +30,6 @@ export default function ProductForm({
       price: product.price,
       comparePrice: product.comparePrice,
       costPerItem: product.costPerItem,
-      // Don't include images in defaultValues since they're handled separately
       inventory: {
         trackQuantity: product.inventory.trackQuantity,
         quantity: product.inventory.quantity,
@@ -50,7 +49,6 @@ export default function ProductForm({
         quantity: 0,
         lowStockAlert: undefined
       }
-      // images is omitted from defaultValues
     }
   });
 
@@ -58,8 +56,11 @@ export default function ProductForm({
     // Create a complete CreateProductData object
     const submitData: CreateProductData = {
       ...data,
-      // Combine existing image URLs and new files
-      images: [...existingImages, ...newImages]
+      // Keep existing images that weren't deleted and add new images
+      images: [
+        ...existingImages.filter(img => !imagesToDelete.includes(img)),
+        ...newImages
+      ]
     };
     
     await onSubmit(submitData);
@@ -72,6 +73,8 @@ export default function ProductForm({
   };
 
   const removeExistingImage = (indexToRemove: number) => {
+    const imageToRemove = existingImages[indexToRemove];
+    setImagesToDelete([...imagesToDelete, imageToRemove]);
     setExistingImages(existingImages.filter((_, index) => index !== indexToRemove));
   };
 
@@ -259,6 +262,7 @@ export default function ProductForm({
                       type="button"
                       onClick={() => removeExistingImage(index)}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove image"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -286,6 +290,7 @@ export default function ProductForm({
                       type="button"
                       onClick={() => removeNewImage(index)}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove image"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
