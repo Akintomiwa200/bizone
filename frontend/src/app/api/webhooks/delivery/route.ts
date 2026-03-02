@@ -4,12 +4,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    console.log("Delivery Webhook Received:", body);
-
-    // TODO: Update delivery status in your database
-
     return NextResponse.json(
-      { message: "Delivery webhook received successfully" },
+      { message: "Delivery webhook received successfully", event: body?.event || null },
       { status: 200 }
     );
   } catch (error) {
