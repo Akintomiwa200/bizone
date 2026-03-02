@@ -2,6 +2,7 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Business from '../models/Business.js';
 import { notificationService } from '../services/notificationService.js';
+import { realtimeService } from '../services/realtimeService.js';
 
 // Helper function to calculate delivery fee
 function calculateDeliveryFee(deliveryAddress, businessAddress) {
@@ -123,7 +124,7 @@ export const createOrder = async (req, res) => {
     // Emit real-time update
     const io = req.app.get('io');
     if (io) {
-      io.to(`business-${businessId}`).emit('new-order', order);
+      realtimeService.emitOrderCreated(io, order);
     }
 
     res.status(201).json({
@@ -226,8 +227,7 @@ export const updateOrderStatus = async (req, res) => {
     // Emit real-time update
     const io = req.app.get('io');
     if (io) {
-      io.to(`business-${order.business._id}`).emit('order-updated', order);
-      io.to(`order-${order._id}`).emit('status-changed', order);
+      realtimeService.emitOrderUpdated(io, order);
     }
 
     res.json({
@@ -274,4 +274,3 @@ export const getOrder = async (req, res) => {
     });
   }
 };
-

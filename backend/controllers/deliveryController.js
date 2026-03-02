@@ -2,6 +2,7 @@ import Delivery from '../models/Delivery.js';
 import Order from '../models/Order.js';
 import Business from '../models/Business.js';
 import { deliveryService } from '../services/deliveryService.js';
+import { realtimeService } from '../services/realtimeService.js';
 
 // @desc    Request a delivery for an order
 // @route   POST /api/delivery/request
@@ -67,6 +68,11 @@ export const requestDelivery = async (req, res) => {
     // Update order with delivery reference
     order.delivery = delivery._id;
     await order.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      realtimeService.emitDeliveryUpdated(io, delivery);
+    }
 
     res.status(201).json({
       success: true,
@@ -165,6 +171,11 @@ export const updateDeliveryStatus = async (req, res) => {
       location
     );
 
+    const io = req.app.get('io');
+    if (io) {
+      realtimeService.emitDeliveryUpdated(io, updatedDelivery);
+    }
+
     res.json({
       success: true,
       message: 'Delivery status updated successfully',
@@ -238,6 +249,11 @@ export const assignRider = async (req, res) => {
 
     const updatedDelivery = await deliveryService.assignRider(deliveryId, riderId);
 
+    const io = req.app.get('io');
+    if (io) {
+      realtimeService.emitDeliveryUpdated(io, updatedDelivery);
+    }
+
     res.json({
       success: true,
       message: 'Rider assigned successfully',
@@ -251,4 +267,3 @@ export const assignRider = async (req, res) => {
     });
   }
 };
-

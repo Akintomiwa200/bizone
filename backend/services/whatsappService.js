@@ -1,6 +1,9 @@
 import { whatsappConfig, whatsappApiClient } from '../config/whatsapp.js';
 import Chat from '../models/Chat.js';
 import Business from '../models/Business.js';
+import { realtimeService } from './realtimeService.js';
+
+const normalizePhone = (value = '') => value.toString().replace(/\D/g, '');
 
 export const whatsappService = {
   // Send text message
@@ -379,14 +382,15 @@ export const whatsappService = {
       // Handle messages
       if (value.messages) {
         for (const message of value.messages) {
-          await this.handleIncomingMessage(message, value.contacts?.[0], io);
+          const contact = value.contacts?.find((c) => c.wa_id === message.from) || value.contacts?.[0];
+          await this.handleIncomingMessage(message, contact, io, value.metadata || {});
         }
       }
 
       // Handle status updates
       if (value.statuses) {
         for (const status of value.statuses) {
-          await this.handleStatusUpdate(status);
+          await this.handleStatusUpdate(status, io);
         }
       }
 
@@ -398,11 +402,23 @@ export const whatsappService = {
   },
 
   // Handle incoming message
-  async handleIncomingMessage(message, contact, io) {
+  async handleIncomingMessage(message, contact, io, metadata = {}) {
     try {
-      // Find business by phone number ID
+      const candidates = [
+        normalizePhone(message.to),
+        normalizePhone(metadata.display_phone_number),
+        normalizePhone(metadata.phone_number_id)
+      ].filter(Boolean);
+      const phoneRegexes = candidates
+        .filter((number) => number.length >= 7)
+        .map((number) => new RegExp(`${number.slice(-10)}$`));
+
       const business = await Business.findOne({
-        'contact.phone': message.to
+        $or: [
+          { 'contact.phone': { $in: candidates } },
+          { 'social.whatsapp': { $in: candidates } },
+          ...(phoneRegexes.length > 0 ? [{ 'contact.phone': { $in: phoneRegexes } }, { 'social.whatsapp': { $in: phoneRegexes } }] : [])
+        ]
       });
 
       if (!business) {
@@ -417,16 +433,29 @@ export const whatsappService = {
         'Media message';
 
       // Save incoming message
-      await this.saveMessage(business._id, from, {
+      const savedChat = await this.saveMessage(business._id, from, {
         messageId: message.id,
         from,
-        to: message.to,
+        to: message.to || metadata.display_phone_number || metadata.phone_number_id,
         type: message.type || 'text',
         content: messageContent,
         mediaUrl: message.image?.id || message.document?.id || message.video?.id,
         direction: 'inbound',
         status: 'delivered'
       });
+
+      if (io) {
+        realtimeService.emitWhatsAppMessage(io, business._id.toString(), {
+          chatId: savedChat?._id,
+          businessId: business._id,
+          from,
+          to: message.to || metadata.display_phone_number || metadata.phone_number_id,
+          content: messageContent,
+          type: message.type || 'text',
+          direction: 'inbound',
+          timestamp: new Date().toISOString()
+        });
+      }
 
       // Update contact info if available
       if (contact) {
@@ -453,17 +482,26 @@ export const whatsappService = {
   },
 
   // Handle status update
-  async handleStatusUpdate(status) {
+  async handleStatusUpdate(status, io) {
     try {
       // Update message status in database
-      await Chat.updateOne(
+      const updatedChat = await Chat.findOneAndUpdate(
         { 'messages.messageId': status.id },
         {
           $set: {
             'messages.$.status': status.status
           }
-        }
+        },
+        { new: true }
       );
+
+      if (io && updatedChat) {
+        realtimeService.emitWhatsAppStatus(io, updatedChat.business.toString(), {
+          messageId: status.id,
+          status: status.status,
+          timestamp: status.timestamp
+        });
+      }
 
       return { success: true };
     } catch (error) {
@@ -482,4 +520,3 @@ export const whatsappService = {
 };
 
 export default whatsappService;
-

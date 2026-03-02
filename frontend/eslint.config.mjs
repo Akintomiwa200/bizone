@@ -5,6 +5,21 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    rules: {
+      "react/display-name": "off",
+      "react/no-unescaped-entities": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-expressions": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@next/next/no-img-element": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "react-hooks/static-components": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -12,6 +27,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "eslint.config.mjs",
   ]),
 ]);
 

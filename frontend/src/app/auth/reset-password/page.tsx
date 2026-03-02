@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -17,7 +17,7 @@ import {
   ArrowLeft
 } from 'lucide-react'
 
-const ResetPasswordPage = () => {
+const ResetPasswordContent = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -277,5 +277,11 @@ const ResetPasswordPage = () => {
     </div>
   )
 }
+
+const ResetPasswordPage = () => (
+  <Suspense fallback={null}>
+    <ResetPasswordContent />
+  </Suspense>
+)
 
 export default ResetPasswordPage

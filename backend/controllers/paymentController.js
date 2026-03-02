@@ -1,5 +1,6 @@
 import Order from '../models/Order.js';
 import flw, { paymentConfig } from '../config/payment.js';
+import { realtimeService } from '../services/realtimeService.js';
 
 // @desc    Initialize payment
 // @route   POST /api/payment/initialize
@@ -75,6 +76,11 @@ export const verifyPayment = async (req, res) => {
       if (order) {
         order.paymentStatus = 'paid';
         await order.save();
+
+        const io = req.app.get('io');
+        if (io) {
+          realtimeService.emitPaymentUpdated(io, order, response.data);
+        }
       }
 
       res.json({
@@ -111,6 +117,11 @@ export const paymentWebhook = async (req, res) => {
       if (order && data.status === 'successful') {
         order.paymentStatus = 'paid';
         await order.save();
+
+        const io = req.app.get('io');
+        if (io) {
+          realtimeService.emitPaymentUpdated(io, order, data);
+        }
       }
     }
 
@@ -123,4 +134,3 @@ export const paymentWebhook = async (req, res) => {
     });
   }
 };
-

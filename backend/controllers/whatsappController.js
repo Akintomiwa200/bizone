@@ -1,5 +1,6 @@
 import { whatsappService } from '../services/whatsappService.js';
 import Business from '../models/Business.js';
+import { realtimeService } from '../services/realtimeService.js';
 
 // @desc    Send WhatsApp message
 // @route   POST /api/whatsapp/messages
@@ -63,6 +64,20 @@ export const sendMessage = async (req, res) => {
       message: 'Message sent successfully',
       data: result
     });
+
+    const io = req.app.get('io');
+    if (io) {
+      realtimeService.emitWhatsAppMessage(io, business._id.toString(), {
+        businessId: business._id,
+        from: business.contact?.phone || 'business',
+        to,
+        type,
+        content: type === 'template' ? templateName : content,
+        direction: 'outbound',
+        status: result.status || 'sent',
+        timestamp: new Date().toISOString()
+      });
+    }
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -326,4 +341,3 @@ export const markAsRead = async (req, res) => {
     });
   }
 };
-

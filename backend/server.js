@@ -9,6 +9,9 @@ import os from 'os';
 import connectDB from './config/database.js';
 import errorHandler from './middleware/errorHandler.js';
 import rateLimiter from './middleware/rateLimiter.js';
+import { authenticateSocket } from './middleware/socketAuth.js';
+import Order from './models/Order.js';
+import Delivery from './models/Delivery.js';
 
 // Route imports
 import authRoutes from './routes/auth.js';
@@ -33,6 +36,8 @@ const io = new Server(httpServer, {
   pingTimeout: 60000,
   pingInterval: 25000
 });
+
+io.use(authenticateSocket);
 
 // Environment configuration
 const ENV = process.env.NODE_ENV || 'development';
@@ -163,21 +168,72 @@ if (ENV === 'development') {
 
 // Socket.io for real-time features
 io.on('connection', (socket) => {
-  console.log(`🔌 User connected: ${socket.id} - ${new Date().toLocaleTimeString()}`);
+  const { user, businessId, riderId } = socket.data;
+  console.log(`🔌 User connected: ${socket.id} (${user?.id || 'unknown'}) - ${new Date().toLocaleTimeString()}`);
 
-  socket.on('join-business', (businessId) => {
+  if (user?.id) {
+    socket.join(`user-${user.id}`);
+  }
+  if (businessId) {
     socket.join(`business-${businessId}`);
-    console.log(`🏢 Business room joined: ${businessId}`);
+  }
+  if (riderId) {
+    socket.join(`rider-${riderId}`);
+  }
+
+  socket.on('join-business', (requestedBusinessId, ack) => {
+    if (!businessId || requestedBusinessId !== businessId) {
+      ack?.({ success: false, message: 'Not authorized for this business room' });
+      return;
+    }
+    socket.join(`business-${requestedBusinessId}`);
+    ack?.({ success: true });
+    console.log(`🏢 Business room joined: ${requestedBusinessId}`);
   });
 
-  socket.on('join-delivery', (deliveryId) => {
-    socket.join(`delivery-${deliveryId}`);
-    console.log(`🚚 Delivery room joined: ${deliveryId}`);
+  socket.on('join-delivery', async (deliveryId, ack) => {
+    try {
+      const delivery = await Delivery.findById(deliveryId).select('business rider');
+      if (!delivery) {
+        ack?.({ success: false, message: 'Delivery not found' });
+        return;
+      }
+
+      const belongsToBusiness = businessId && delivery.business?.toString() === businessId;
+      const belongsToRider = riderId && delivery.rider?.toString() === riderId;
+
+      if (!belongsToBusiness && !belongsToRider) {
+        ack?.({ success: false, message: 'Not authorized for this delivery room' });
+        return;
+      }
+
+      socket.join(`delivery-${deliveryId}`);
+      ack?.({ success: true });
+      console.log(`🚚 Delivery room joined: ${deliveryId}`);
+    } catch (error) {
+      ack?.({ success: false, message: 'Failed to join delivery room' });
+    }
   });
 
-  socket.on('join-order', (orderId) => {
-    socket.join(`order-${orderId}`);
-    console.log(`📦 Order room joined: ${orderId}`);
+  socket.on('join-order', async (orderId, ack) => {
+    try {
+      if (!businessId) {
+        ack?.({ success: false, message: 'Business account required for order room' });
+        return;
+      }
+
+      const order = await Order.findOne({ _id: orderId, business: businessId }).select('_id');
+      if (!order) {
+        ack?.({ success: false, message: 'Order not found or not authorized' });
+        return;
+      }
+
+      socket.join(`order-${orderId}`);
+      ack?.({ success: true });
+      console.log(`📦 Order room joined: ${orderId}`);
+    } catch (error) {
+      ack?.({ success: false, message: 'Failed to join order room' });
+    }
   });
 
   socket.on('error', (error) => {
