@@ -56,11 +56,7 @@ export default function ProductForm({
     // Create a complete CreateProductData object
     const submitData: CreateProductData = {
       ...data,
-      // Keep existing images that weren't deleted and add new images
-      images: [
-        ...existingImages.filter(img => !imagesToDelete.includes(img)),
-        ...newImages
-      ]
+      images: newImages
     };
     
     await onSubmit(submitData);

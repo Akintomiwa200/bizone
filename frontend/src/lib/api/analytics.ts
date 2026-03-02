@@ -93,7 +93,7 @@ export const analyticsAPI = {
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     
-    const response = await apiClient.get(`/analytics/export?${params}`, {
+    const response = await apiClient.get<Blob>(`/analytics/export?${params}`, {
       responseType: 'blob',
     });
     return response;

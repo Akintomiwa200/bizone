@@ -18,7 +18,7 @@ import {
 
 const SolutionsSection = () => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, threshold: 0.1 })
+  const isInView = useInView(ref, { once: true, amount: 0.1 })
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -37,7 +37,7 @@ const SolutionsSection = () => {
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   }
@@ -49,7 +49,7 @@ const SolutionsSection = () => {
       opacity: 1,
       transition: {
         duration: 0.5,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     },
     hover: {
@@ -57,7 +57,7 @@ const SolutionsSection = () => {
       scale: 1.02,
       transition: {
         duration: 0.3,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     }
   }

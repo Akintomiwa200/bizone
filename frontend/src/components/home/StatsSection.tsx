@@ -7,7 +7,7 @@ import { TrendingUp, Shield, Zap, Globe } from 'lucide-react'
 
 const StatsSection = () => {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, threshold: 0.1 })
+  const isInView = useInView(ref, { once: true, amount: 0.1 })
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -26,7 +26,7 @@ const StatsSection = () => {
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   }
@@ -38,7 +38,7 @@ const StatsSection = () => {
       opacity: 1,
       transition: {
         duration: 0.8,
-        type: "spring",
+        type: "spring" as const,
         stiffness: 100
       }
     }

@@ -45,6 +45,14 @@ export interface PaymentStats {
   averageTransactionValue: number;
 }
 
+export interface PaymentsResponse {
+  payments: Payment[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const paymentAPI = {
   async initiatePayment(data: PaymentInitiateData): Promise<{
     authorizationUrl: string;
@@ -62,13 +70,13 @@ export const paymentAPI = {
     page: number = 1,
     limit: number = 20,
     status?: Payment['status']
-  ) {
+  ): Promise<PaymentsResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
       ...(status && { status }),
     });
-    return await apiClient.get(`/payments?${params}`);
+    return await apiClient.get<PaymentsResponse>(`/payments?${params}`);
   },
 
   async getPayment(id: string): Promise<Payment> {
@@ -86,6 +94,6 @@ export const paymentAPI = {
   },
 
   async getPaymentMethods(): Promise<Array<{ id: string; name: string; isActive: boolean }>> {
-    return await apiClient.get('/payments/methods');
+    return await apiClient.get<Array<{ id: string; name: string; isActive: boolean }>>('/payments/methods');
   },
 };

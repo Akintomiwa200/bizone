@@ -13,7 +13,16 @@ export async function GET(req: NextRequest) {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    return new NextResponse(challenge, { status: 200 });
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    try {
+      const proxyUrl = new URL('/api/whatsapp/webhook', backendUrl);
+      proxyUrl.search = req.nextUrl.search;
+      const response = await fetch(proxyUrl.toString(), { method: 'GET', cache: 'no-store' });
+      const text = await response.text();
+      return new NextResponse(text || challenge, { status: response.status || 200 });
+    } catch {
+      return new NextResponse(challenge, { status: 200 });
+    }
   }
 
   return NextResponse.json({ error: "Verification failed" }, { status: 403 });
@@ -25,20 +34,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-
-    console.log("WhatsApp Webhook:", JSON.stringify(body, null, 2));
-
-    // Example: Access incoming message
-    const message =
-      body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-
-    if (message) {
-      console.log("Incoming message:", message.text?.body);
-      // TODO: Save message to DB
-      // TODO: Trigger auto-reply
-    }
-
-    return NextResponse.json({ received: true }, { status: 200 });
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    const proxyUrl = new URL('/api/whatsapp/webhook', backendUrl);
+    const response = await fetch(proxyUrl.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    });
+    const text = await response.text();
+    return new NextResponse(text || 'OK', { status: response.status || 200 });
   } catch (error) {
     console.error("WhatsApp Webhook Error:", error);
     return NextResponse.json({ error: "Webhook failed" }, { status: 500 });

@@ -82,6 +82,7 @@ export interface CreateProductData {
   inventory: {
     trackQuantity: boolean;
     quantity: number;
+    lowStockAlert?: number;
   };
   images?: File[];
 }

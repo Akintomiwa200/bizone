@@ -1,5 +1,11 @@
 import { apiClient } from './client';
 
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -57,6 +63,7 @@ export interface ProductUpdateData extends Partial<ProductCreateData> {
 }
 
 export interface ProductsFilter {
+  businessId?: string;
   category?: string;
   tags?: string[];
   minPrice?: number;
@@ -80,24 +87,42 @@ export const productsAPI = {
     limit: number = 20,
     filter?: ProductsFilter
   ): Promise<ProductsResponse> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...(filter as any),
-    });
-    return await apiClient.get<ProductsResponse>(`/products?${params}`);
+    if (!filter?.businessId) {
+      return {
+        products: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
+    }
+
+    const params = new URLSearchParams();
+    if (filter.category) params.append('category', filter.category);
+    const response = await apiClient.get<ApiEnvelope<Product[]>>(`/products/business/${filter.businessId}?${params}`);
+    const products = response.data || [];
+    return {
+      products,
+      total: products.length,
+      page,
+      limit,
+      totalPages: products.length ? 1 : 0,
+    };
   },
 
   async getProduct(id: string): Promise<Product> {
-    return await apiClient.get<Product>(`/products/${id}`);
+    const response = await apiClient.get<ApiEnvelope<Product>>(`/products/${id}`);
+    return response.data;
   },
 
   async createProduct(data: ProductCreateData): Promise<Product> {
-    return await apiClient.post<Product>('/products', data);
+    const response = await apiClient.post<ApiEnvelope<Product>>('/products', data);
+    return response.data;
   },
 
   async updateProduct(id: string, data: ProductUpdateData): Promise<Product> {
-    return await apiClient.patch<Product>(`/products/${id}`, data);
+    const response = await apiClient.put<ApiEnvelope<Product>>(`/products/${id}`, data);
+    return response.data;
   },
 
   async deleteProduct(id: string): Promise<void> {
@@ -105,22 +130,23 @@ export const productsAPI = {
   },
 
   async bulkUpdateProducts(ids: string[], data: Partial<Product>): Promise<void> {
-    await apiClient.patch('/products/bulk', { ids, data });
+    await Promise.all(ids.map((id) => productsAPI.updateProduct(id, data as ProductUpdateData)));
   },
 
   async uploadProductImage(file: File): Promise<{ url: string }> {
     const formData = new FormData();
     formData.append('image', file);
-    return await apiClient.post<{ url: string }>('/products/upload', formData, {
+    const response = await apiClient.post<ApiEnvelope<{ url: string }>>('/products/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return response.data;
   },
 
   async getCategories(): Promise<string[]> {
-    return await apiClient.get<string[]>('/products/categories');
+    return [];
   },
 
   async getLowStockProducts(): Promise<Product[]> {
-    return await apiClient.get<Product[]>('/products/low-stock');
+    return [];
   },
 };

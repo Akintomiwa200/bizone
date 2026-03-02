@@ -112,12 +112,13 @@ export const useWhatsApp = () => {
     setError(null);
     try {
       const response = await whatsappAPI.getMessages(contact, page, limit) as any;
-      setMessages(response.messages);
+      const messages = Array.isArray(response) ? response : (response.messages || response.chats || []);
+      setMessages(messages);
       setPagination({
-        page: response.page,
-        limit: response.limit,
-        total: response.total,
-        totalPages: response.totalPages,
+        page: response.page || page,
+        limit: response.limit || limit,
+        total: response.total || messages.length,
+        totalPages: response.totalPages || (messages.length ? 1 : 0),
       });
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to fetch WhatsApp messages';

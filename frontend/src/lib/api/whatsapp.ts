@@ -1,5 +1,11 @@
 import { apiClient } from './client';
 
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
 export interface WhatsAppMessage {
   id: string;
   from: string;
@@ -37,7 +43,8 @@ export interface WhatsAppContact {
 
 export const whatsappAPI = {
   async sendMessage(data: SendMessageData): Promise<{ messageId: string; status: string }> {
-    return await apiClient.post('/whatsapp/messages', data);
+    const response = await apiClient.post<ApiEnvelope<{ messageId: string; status: string }>>('/whatsapp/messages', data);
+    return response.data;
   },
 
   async getMessages(
@@ -50,19 +57,23 @@ export const whatsappAPI = {
       limit: limit.toString(),
       ...(contact && { contact }),
     });
-    return await apiClient.get(`/whatsapp/messages?${params}`);
+    const response = await apiClient.get<ApiEnvelope<any>>(`/whatsapp/messages?${params}`);
+    return response.data;
   },
 
   async getContacts(): Promise<WhatsAppContact[]> {
-    return await apiClient.get<WhatsAppContact[]>('/whatsapp/contacts');
+    const response = await apiClient.get<ApiEnvelope<WhatsAppContact[]>>('/whatsapp/contacts');
+    return response.data || [];
   },
 
   async getTemplates(): Promise<WhatsAppTemplate[]> {
-    return await apiClient.get<WhatsAppTemplate[]>('/whatsapp/templates');
+    const response = await apiClient.get<ApiEnvelope<WhatsAppTemplate[]>>('/whatsapp/templates');
+    return response.data || [];
   },
 
   async createTemplate(template: Omit<WhatsAppTemplate, 'name'>): Promise<{ name: string }> {
-    return await apiClient.post('/whatsapp/templates', template);
+    const response = await apiClient.post<ApiEnvelope<{ name: string }>>('/whatsapp/templates', template);
+    return response.data;
   },
 
   async deleteTemplate(templateName: string): Promise<void> {
@@ -76,7 +87,14 @@ export const whatsappAPI = {
     email: string;
     websites: string[];
   }> {
-    return await apiClient.get('/whatsapp/business-profile');
+    const response = await apiClient.get<ApiEnvelope<{
+      about: string;
+      address: string;
+      description: string;
+      email: string;
+      websites: string[];
+    }>>('/whatsapp/business-profile');
+    return response.data;
   },
 
   async updateBusinessProfile(profile: Partial<{

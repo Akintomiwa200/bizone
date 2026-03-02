@@ -55,7 +55,7 @@ const Footer = () => {
     <motion.footer
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, threshold: 0.1 }}
+      viewport={{ once: true, amount: 0.1 }}
       variants={containerVariants}
       className="bg-gradient-to-br from-gray-900 to-gray-800 text-white relative overflow-hidden"
     >

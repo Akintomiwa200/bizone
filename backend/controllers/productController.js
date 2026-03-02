@@ -1,5 +1,6 @@
 import Product from '../models/Product.js';
 import Business from '../models/Business.js';
+import cloudinary from '../config/cloudinary.js';
 
 // @desc    Get all products for a business
 // @route   GET /api/products/business/:businessId
@@ -172,3 +173,46 @@ export const getProduct = async (req, res) => {
   }
 };
 
+// @desc    Upload a product image
+// @route   POST /api/products/upload
+// @access  Private
+export const uploadProductImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image file is required'
+      });
+    }
+
+    // Try Cloudinary first when credentials are configured
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+      const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      const uploadResult = await cloudinary.uploader.upload(dataUri, {
+        folder: 'bizone/products',
+        resource_type: 'image'
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          url: uploadResult.secure_url
+        }
+      });
+    }
+
+    // Fallback when Cloudinary is not configured
+    return res.json({
+      success: true,
+      data: {
+        url: `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error uploading image',
+      error: error.message
+    });
+  }
+};

@@ -12,7 +12,7 @@ export interface UIState {
   toggleSidebar: () => void;
   openModal: (content: React.ReactNode) => void;
   closeModal: () => void;
-  addNotification: (notification: Omit<Notification, 'id'>) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void;
   removeNotification: (id: string) => void;
   clearNotifications: () => void;
 }
@@ -23,6 +23,10 @@ export interface Notification {
   title: string;
   message: string;
   duration?: number;
+  action?: {
+    label: string;
+    onClick?: () => void;
+  };
   createdAt: string;
 }
 
@@ -57,7 +61,7 @@ export const uiStore: StateCreator<UIState> = (set, get) => ({
     set({ modalOpen: false, modalContent: null });
   },
 
-  addNotification: (notification: Omit<Notification, 'id'>) => {
+  addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => {
     const id = Math.random().toString(36).substring(2);
     const newNotification: Notification = {
       ...notification,

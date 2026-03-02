@@ -115,7 +115,7 @@ export const ordersAPI = {
   },
 
   async exportOrders(format: 'csv' | 'excel' = 'csv'): Promise<Blob> {
-    const response = await apiClient.get(`/orders/export?format=${format}`, {
+    const response = await apiClient.get<Blob>(`/orders/export?format=${format}`, {
       responseType: 'blob',
     });
     return response;

@@ -9,7 +9,7 @@ export interface ChatEngineConfig {
   tone: 'professional' | 'friendly' | 'casual';
   maxHistory: number;
   enableSuggestions: boolean;
-  includeEmojis?: boolean;
+  includeEmojis: boolean;
 }
 
 export class ChatEngine {
@@ -24,6 +24,7 @@ export class ChatEngine {
       tone: 'friendly',
       maxHistory: 10,
       enableSuggestions: true,
+      includeEmojis: false,
       ...config,
     };
 

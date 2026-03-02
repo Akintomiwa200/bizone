@@ -64,6 +64,7 @@ const Header = () => {
 
   const { isAuthenticated, user, logout } = useAuth()
   const router = useRouter()
+  const displayName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email : 'User'
 
   /* Shadow on scroll */
   useEffect(() => {
@@ -147,9 +148,9 @@ const Header = () => {
                   className="flex items-center gap-2 rounded-full pl-2 pr-3 py-1.5 hover:bg-black/5 transition-colors"
                 >
                   <div className="w-7 h-7 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                    {user?.name?.[0]?.toUpperCase() ?? 'U'}
+                    {displayName[0]?.toUpperCase() ?? 'U'}
                   </div>
-                  <span className={`text-sm font-medium ${textColor}`}>{user?.name}</span>
+                  <span className={`text-sm font-medium ${textColor}`}>{displayName}</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${textColor} ${userMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -163,7 +164,7 @@ const Header = () => {
                       className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50"
                     >
                       <div className="px-3 py-2 border-b border-gray-100 mb-1">
-                        <p className="text-xs font-semibold text-gray-900">{user?.name}</p>
+                        <p className="text-xs font-semibold text-gray-900">{displayName}</p>
                         <p className="text-xs text-gray-400 truncate">{user?.email}</p>
                       </div>
                       <button onClick={() => go(ROUTES.DASHBOARD.OVERVIEW)} className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg mx-auto transition-colors">
