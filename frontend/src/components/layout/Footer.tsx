@@ -1,242 +1,99 @@
 "use client"
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { ArrowUp, Leaf, Mail, MapPin, Phone } from 'lucide-react'
 import { ROUTES } from '@/lib/routes'
-import {
-  Building,
-  Twitter,
-  Linkedin,
-  Mail,
-  Phone,
-  MapPin,
-  ArrowUp,
-  Heart
-} from 'lucide-react'
-import { useState } from 'react'
 
 const Footer = () => {
-  const currentYear = new Date().getFullYear()
-  const [email, setEmail] = useState('')
+  const year = new Date().getFullYear()
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Handle newsletter subscription
-    console.log('Subscribed:', email)
-    setEmail('')
-  }
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  }
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut" as const
-      }
-    }
-  }
-
   return (
-    <motion.footer
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.1 }}
-      variants={containerVariants}
-      className="bg-gradient-to-br from-gray-900 to-gray-800 text-white relative overflow-hidden"
-    >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }} />
+    <footer className="relative overflow-hidden bg-gray-950 text-white">
+      <div className="absolute inset-0 opacity-10">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+            backgroundSize: '36px 36px',
+          }}
+        />
       </div>
 
-      <div className="container mx-auto max-w-7xl px-4 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-8 py-12">
-          {/* Company Info */}
-          <motion.div variants={itemVariants} className="lg:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <Building className="h-6 w-6" />
+      <div className="relative container mx-auto max-w-7xl px-4 py-12">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600">
+                <Leaf className="h-4 w-4" />
               </div>
-              <h3 className="text-2xl font-bold">Bizone</h3>
+              <p className="text-xl font-bold">Bizone</p>
             </div>
-            <p className="text-gray-300 mb-6 leading-relaxed">
-              Empowering Nigerian MSMEs with integrated business solutions for digital transformation,
-              financial inclusion, and sustainable growth.
+            <p className="text-sm leading-relaxed text-gray-300">
+              Commerce and transaction infrastructure for Nigerian MSMEs using WhatsApp-first workflows.
             </p>
+          </section>
 
-            {/* Contact Info */}
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-3 text-gray-300">
-                <MapPin className="h-4 w-4 text-blue-400" />
-                <span className="text-sm">Lagos, Nigeria</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-300">
-                <Phone className="h-4 w-4 text-blue-400" />
-                <span className="text-sm">+234 901 234 5678</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-300">
-                <Mail className="h-4 w-4 text-blue-400" />
-                <span className="text-sm">hello@bizone.ng</span>
-              </div>
-            </div>
-
-            {/* Social Links */}
-            <div className="flex space-x-4">
-              {[
-                { icon: Twitter, href: "#", label: "Twitter" },
-                { icon: Linkedin, href: "#", label: "LinkedIn" },
-                { icon: Mail, href: "#", label: "Email" }
-              ].map((social, index) => (
-                <motion.a
-                  key={social.label}
-                  href={social.href}
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.2, y: -2 }}
-                  className="bg-gray-700 hover:bg-blue-600 p-2 rounded-lg transition-colors duration-300"
-                >
-                  <social.icon className="h-5 w-5" />
-                  <span className="sr-only">{social.label}</span>
-                </motion.a>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Solutions */}
-          <motion.div variants={itemVariants}>
-            <h4 className="font-semibold text-lg mb-6 text-white">Solutions</h4>
-            <ul className="space-y-3 text-gray-300">
-              {[
-                'Digital Storefront',
-                'Financial Services',
-                'Logistics Network',
-                'Business Analytics',
-                'Payment Processing',
-                'Inventory Management'
-              ].map((item, index) => (
-                <motion.li key={item} whileHover={{ x: 5 }} transition={{ type: "spring" }}>
-                  <a href="#" className="hover:text-blue-400 transition-colors duration-300 text-sm">
-                    {item}
-                  </a>
-                </motion.li>
-              ))}
+          <section>
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-200">Navigation</h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li><Link href={ROUTES.FEATURES} className="hover:text-white">Features</Link></li>
+              <li><Link href={ROUTES.SOLUTIONS} className="hover:text-white">Solutions</Link></li>
+              <li><Link href={ROUTES.PRICING} className="hover:text-white">Pricing</Link></li>
+              <li><Link href={ROUTES.ABOUT} className="hover:text-white">About</Link></li>
             </ul>
-          </motion.div>
+          </section>
 
-          {/* Company */}
-          <motion.div variants={itemVariants}>
-            <h4 className="font-semibold text-lg mb-6 text-white">Company</h4>
-            <ul className="space-y-3 text-gray-300">
-              {[
-                'About Us',
-                'Careers',
-                'Contact',
-                'Blog',
-                'Press Kit',
-                'Partners'
-              ].map((item, index) => (
-                <motion.li key={item} whileHover={{ x: 5 }} transition={{ type: "spring" }}>
-                  <a href="#" className="hover:text-blue-400 transition-colors duration-300 text-sm">
-                    {item}
-                  </a>
-                </motion.li>
-              ))}
+          <section>
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-200">Platform</h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li><Link href={ROUTES.AUTH.REGISTER} className="hover:text-white">Create Account</Link></li>
+              <li><Link href={ROUTES.AUTH.LOGIN} className="hover:text-white">Sign In</Link></li>
+              <li><Link href={ROUTES.DASHBOARD.OVERVIEW} className="hover:text-white">Dashboard</Link></li>
+              <li><Link href={ROUTES.HELP} className="hover:text-white">Help</Link></li>
             </ul>
-          </motion.div>
+          </section>
 
-          {/* Support */}
-          <motion.div variants={itemVariants}>
-            <h4 className="font-semibold text-lg mb-6 text-white">Support</h4>
-            <ul className="space-y-3 text-gray-300">
-              {[
-                'Help Center',
-                'Documentation',
-                'API Status',
-                'Community',
-                'Service Status',
-                'Contact Support'
-              ].map((item, index) => (
-                <motion.li key={item} whileHover={{ x: 5 }} transition={{ type: "spring" }}>
-                  <a href="#" className="hover:text-blue-400 transition-colors duration-300 text-sm">
-                    {item}
-                  </a>
-                </motion.li>
-              ))}
+          <section>
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-200">Contact</h4>
+            <ul className="space-y-3 text-sm text-gray-300">
+              <li className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-emerald-400" />
+                Lagos, Nigeria
+              </li>
+              <li className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-emerald-400" />
+                +234 801 234 5678
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-emerald-400" />
+                support@bizone.ng
+              </li>
             </ul>
-          </motion.div>
-
-          {/* Newsletter */}
-          <motion.div variants={itemVariants}>
-            <h4 className="font-semibold text-lg mb-6 text-white">Stay Updated</h4>
-            <p className="text-gray-300 text-sm mb-4">
-              Get the latest news and updates about Bizone
-            </p>
-            <form onSubmit={handleSubscribe} className="space-y-3">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
-                required
-              />
-              <motion.button
-                type="submit"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 text-sm"
-              >
-                Subscribe
-              </motion.button>
-            </form>
-          </motion.div>
+          </section>
         </div>
 
-        {/* Bottom Bar */}
-        <motion.div
-          variants={itemVariants}
-          className="border-t border-gray-700 py-8 flex flex-col md:flex-row justify-between items-center"
-        >
-          <div className="flex items-center gap-2 text-gray-300 text-sm mb-4 md:mb-0">
-            <span>© {currentYear} Bizone Platform. All rights reserved.</span>
-            <Heart className="h-4 w-4 text-red-400" />
+        <div className="mt-10 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-6 text-sm text-gray-400 md:flex-row md:items-center">
+          <p>© {year} Bizone. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <Link href={ROUTES.ABOUT} className="hover:text-white">Privacy</Link>
+            <Link href={ROUTES.ABOUT} className="hover:text-white">Terms</Link>
+            <motion.button
+              onClick={scrollToTop}
+              whileHover={{ y: -2 }}
+              className="inline-flex items-center rounded-lg border border-white/15 px-3 py-1.5 text-gray-200 hover:bg-white/10"
+            >
+              Top
+              <ArrowUp className="ml-1 h-3.5 w-3.5" />
+            </motion.button>
           </div>
-
-          <div className="flex items-center gap-6 text-sm text-gray-300">
-            <a href="#" className="hover:text-blue-400 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-blue-400 transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-blue-400 transition-colors">Cookie Policy</a>
-          </div>
-
-          {/* Scroll to Top */}
-          <motion.button
-            onClick={scrollToTop}
-            whileHover={{ scale: 1.1, y: -2 }}
-            whileTap={{ scale: 0.9 }}
-            className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg z-50"
-          >
-            <ArrowUp className="h-5 w-5" />
-          </motion.button>
-        </motion.div>
+        </div>
       </div>
-    </motion.footer>
+    </footer>
   )
 }
 

@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { ROUTES } from '@/lib/routes'
 import { Menu, X, ChevronDown, LogOut, LayoutDashboard, Leaf } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 /* ─────────────────────────────────────────
    Section colour map  (id → tailwind bg)
@@ -74,10 +75,10 @@ const Header = () => {
   }, [])
 
   const nav = [
-    { name: 'Features', href: '#features' },
-    { name: 'Solutions', href: '#solutions' },
-    { name: 'Pricing', href: '#pricing' },
-    { name: 'About', href: '#about' },
+    { name: 'Features', href: ROUTES.FEATURES },
+    { name: 'Solutions', href: ROUTES.SOLUTIONS },
+    { name: 'Pricing', href: ROUTES.PRICING },
+    { name: 'About', href: ROUTES.ABOUT },
   ]
 
   const go = (path: string) => {
@@ -129,13 +130,13 @@ const Header = () => {
           {/* Desktop nav links */}
           <div className="hidden lg:flex items-center gap-8">
             {nav.map((link) => (
-              <a
+              <Link
                 key={link.name}
                 href={link.href}
                 className={`text-sm font-medium transition-colors ${textColor} ${hoverText}`}
               >
                 {link.name}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -217,14 +218,14 @@ const Header = () => {
             >
               <div className="py-4 space-y-1">
                 {nav.map((link) => (
-                  <a
+                  <Link
                     key={link.name}
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
                     className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${textColor} ${hoverText} hover:bg-black/5`}
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 ))}
                 <div className="pt-3 border-t border-black/5 space-y-2">
                   {isAuthenticated ? (
