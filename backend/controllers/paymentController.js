@@ -1,4 +1,6 @@
 import Order from '../models/Order.js';
+import Business from '../models/Business.js';
+import User from '../models/User.js';
 import flw, { paymentConfig } from '../config/payment.js';
 import { realtimeService } from '../services/realtimeService.js';
 
@@ -74,8 +76,26 @@ export const verifyPayment = async (req, res) => {
       const order = await Order.findOne({ orderNumber: txRef });
       
       if (order) {
+        const wasAlreadyPaid = order.paymentStatus === 'paid';
         order.paymentStatus = 'paid';
         await order.save();
+
+        // Credit business owner's wallet balance only on first successful payment
+        if (!wasAlreadyPaid) {
+          try {
+            const business = await Business.findById(order.business).select('owner');
+            if (business?.owner) {
+              const owner = await User.findById(business.owner);
+              if (owner) {
+                owner.wallet = owner.wallet || {};
+                owner.wallet.balance = (owner.wallet.balance || 0) + (order.total || 0);
+                await owner.save();
+              }
+            }
+          } catch (walletError) {
+            console.error('Error crediting wallet on payment verify:', walletError);
+          }
+        }
 
         const io = req.app.get('io');
         if (io) {
@@ -115,8 +135,26 @@ export const paymentWebhook = async (req, res) => {
       const order = await Order.findOne({ orderNumber: data.tx_ref });
       
       if (order && data.status === 'successful') {
+        const wasAlreadyPaid = order.paymentStatus === 'paid';
         order.paymentStatus = 'paid';
         await order.save();
+
+        // Credit business owner's wallet on first successful webhook event
+        if (!wasAlreadyPaid) {
+          try {
+            const business = await Business.findById(order.business).select('owner');
+            if (business?.owner) {
+              const owner = await User.findById(business.owner);
+              if (owner) {
+                owner.wallet = owner.wallet || {};
+                owner.wallet.balance = (owner.wallet.balance || 0) + (order.total || 0);
+                await owner.save();
+              }
+            }
+          } catch (walletError) {
+            console.error('Error crediting wallet on payment webhook:', walletError);
+          }
+        }
 
         const io = req.app.get('io');
         if (io) {

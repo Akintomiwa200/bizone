@@ -31,7 +31,8 @@ export const receiptService = {
     _validateInput(transaction, businessName) {
         if (!transaction) throw new Error('Transaction data is required');
         if (!businessName) throw new Error('Business name is required');
-        if (!transaction.amount) throw new Error('Transaction amount is required');
+        const amount = transaction.amount ?? transaction.total;
+        if (amount == null || isNaN(Number(amount))) throw new Error('Transaction amount is required');
     },
 
     /**

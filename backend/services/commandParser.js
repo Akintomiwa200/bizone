@@ -318,8 +318,8 @@ export const parseCommand = (message) => {
             };
         }
 
-        // 17. View History
-        if (/(?:view|show|check)\s+(?:my )?history|past (?:transactions|orders)/i.test(text)) {
+        // 17. View History / Account Statement
+        if (/(?:view|show|check)\s+(?:my )?(?:history|statement|account statement|wallet statement)|past (?:transactions|orders)/i.test(text)) {
             return {
                 intent: INTENTS.VIEW_HISTORY,
                 confidence: 1.0,

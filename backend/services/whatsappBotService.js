@@ -96,6 +96,25 @@ export const whatsappBotService = {
                 io.emit('new_message', { phone, text: textContent, businessId, timestamp: new Date() });
             }
 
+            // Handle product selection by number when user is in AWAITING_SELECTION
+            const productIds = user.botState.tempData?.products;
+            if (user.botState.status === 'AWAITING_SELECTION' && Array.isArray(productIds) && productIds.length > 0) {
+                const numMatch = textContent.trim().match(/^([1-9]\d*)$/);
+                if (numMatch) {
+                    const n = parseInt(numMatch[1], 10);
+                    if (n >= 1 && n <= productIds.length) {
+                        user.botState.tempData.selectedIndex = n - 1;
+                        await user.save();
+                        await whatsappService.sendTextMessage(
+                            phone,
+                            `You selected option *${n}*. Reply with your offer amount, e.g. *Offer 4500*`,
+                            businessId
+                        );
+                        return;
+                    }
+                }
+            }
+
             const parsedCommand = parseCommand(textContent);
 
             switch (parsedCommand.intent) {
@@ -220,12 +239,25 @@ export const whatsappBotService = {
                         const { receiptService } = await import('./receiptService.js');
                         const Order = (await import('../models/Order.js')).default;
                         const orderRef = parsedCommand.data.orderId;
-                        const order = await Order.findOne({ reference: new RegExp(orderRef, 'i'), business: businessId });
+                        const order = await Order.findOne({ orderNumber: new RegExp(orderRef, 'i') })
+                            .populate('items.product', 'name')
+                            .populate('business', 'name');
 
                         if (!order) {
-                            await whatsappService.sendTextMessage(phone, `No successful order found with reference ${orderRef}.`, businessId);
+                            await whatsappService.sendTextMessage(phone, `No order found with reference ${orderRef}.`, businessId);
                         } else {
-                            const receipt = receiptService.generateTextReceipt(order, 'Bizone Agri-Trade');
+                            const receiptData = {
+                                ...order.toObject(),
+                                amount: order.total,
+                                reference: order.orderNumber,
+                                items: order.items?.map((item) => ({
+                                    name: item.product?.name || 'Product',
+                                    quantity: item.quantity,
+                                    price: item.price,
+                                    total: item.total
+                                })) || []
+                            };
+                            const receipt = receiptService.generateTextReceipt(receiptData, order.business?.name || 'Bizone Agri-Trade');
                             await whatsappService.sendTextMessage(phone, receipt, businessId);
                         }
                     } catch (e) {
@@ -305,7 +337,8 @@ export const whatsappBotService = {
                         await whatsappService.sendTextMessage(phone, "Please search for a product first before making an offer.", businessId);
                     } else {
                         const amount = parsedCommand.data.amount;
-                        const productId = user.botState.tempData?.products?.[0]; // Mocking selection to the first product matched
+                        const selectedIndex = user.botState.tempData?.selectedIndex ?? 0;
+                        const productId = user.botState.tempData?.products?.[selectedIndex];
 
                         if (!productId) {
                             await whatsappService.sendTextMessage(phone, "No product selected.", businessId);
@@ -318,6 +351,18 @@ export const whatsappBotService = {
                         if (!product) {
                             await whatsappService.sendTextMessage(phone, "Product not found.", businessId);
                             break;
+                        }
+
+                        // Ensure there is enough stock before creating the order
+                        if (product.inventory?.trackQuantity && typeof product.inventory.quantity === 'number') {
+                            if (product.inventory.quantity < 1) {
+                                await whatsappService.sendTextMessage(
+                                    phone,
+                                    `Sorry, *${product.name}* is currently out of stock.`,
+                                    businessId
+                                );
+                                break;
+                            }
                         }
 
                         // Determine negotiation behaviour using product's negotiationPlan
@@ -346,6 +391,18 @@ export const whatsappBotService = {
                             status: 'pending'
                         });
                         await newOrder.save();
+
+                        // Immediately reserve stock for this order
+                        try {
+                            if (product.inventory?.trackQuantity) {
+                                await Product.findByIdAndUpdate(
+                                    product._id,
+                                    { $inc: { 'inventory.quantity': -1 } }
+                                );
+                            }
+                        } catch (inventoryError) {
+                            console.error('Error reserving inventory for WhatsApp order:', inventoryError);
+                        }
 
                         // If delivery is enabled for this product and buyer has a location, attempt to create a Delivery task
                         try {
@@ -488,10 +545,25 @@ export const whatsappBotService = {
 
                 case 'REJECT_OFFER': {
                     const { default: OrderModelReject } = await import('../models/Order.js');
-                    const rejectedOrder = await OrderModelReject.findOne({ orderNumber: new RegExp(parsedCommand.data.offerId, 'i') });
+                    const rejectedOrder = await OrderModelReject.findOne({ orderNumber: new RegExp(parsedCommand.data.offerId, 'i') }).populate('items.product');
                     if (rejectedOrder) {
                         rejectedOrder.status = 'cancelled';
                         await rejectedOrder.save();
+                        // Restock inventory when farmer rejects (order was created but never fulfilled)
+                        try {
+                            if (Array.isArray(rejectedOrder.items)) {
+                                for (const item of rejectedOrder.items) {
+                                    if (item.product?.inventory?.trackQuantity) {
+                                        await Product.findByIdAndUpdate(
+                                            item.product._id,
+                                            { $inc: { 'inventory.quantity': item.quantity } }
+                                        );
+                                    }
+                                }
+                            }
+                        } catch (restockError) {
+                            console.error('Error restocking on reject offer:', restockError);
+                        }
                         if (io) io.emit('order_updated', rejectedOrder);
                         await whatsappService.sendTextMessage(phone, `Offer ${parsedCommand.data.offerId} rejected.`, businessId);
                     } else {
@@ -501,7 +573,96 @@ export const whatsappBotService = {
                 }
 
                 case 'VIEW_ORDERS': {
-                    await whatsappService.sendTextMessage(phone, "Your Recent Orders:\n\n1. BZ-1234 (Completed)\n2. BZ-5678 (Pending)", businessId);
+                    try {
+                        const { default: ViewOrdersModel } = await import('../models/Order.js');
+                        let query;
+                        if (user.role === 'farmer' || user.role === 'business_owner') {
+                            const biz = await Business.findOne({ owner: user._id }).select('_id');
+                            if (!biz) {
+                                await whatsappService.sendTextMessage(phone, 'You have no linked business, so there are no orders to show.', businessId);
+                                break;
+                            }
+                            query = { business: biz._id };
+                        } else {
+                            query = { 'customer.phone': user.phone };
+                        }
+                        const orders = await ViewOrdersModel.find(query).sort({ createdAt: -1 }).limit(15);
+                        if (!orders.length) {
+                            await whatsappService.sendTextMessage(phone, 'You have no orders yet.', businessId);
+                            break;
+                        }
+                        let msg = '📦 *Your Recent Orders*\n\n';
+                        orders.forEach((o, i) => {
+                            msg += `${i + 1}. ${o.orderNumber} - NGN ${o.total} - ${o.status} (${o.paymentStatus})\n`;
+                        });
+                        msg += '\nUse "track order <ref>" for details.';
+                        await whatsappService.sendTextMessage(phone, msg, businessId);
+                    } catch (e) {
+                        console.error('Error fetching orders for VIEW_ORDERS:', e);
+                        await whatsappService.sendTextMessage(phone, 'Could not load orders. Try again later.', businessId);
+                    }
+                    break;
+                }
+
+                case 'VIEW_HISTORY': {
+                    try {
+                        const { default: HistoryOrderModel } = await import('../models/Order.js');
+                        const limit = parsedCommand.data?.limit || 10;
+
+                        let query = {};
+                        let perspectiveLabel = 'transactions';
+
+                        if (user.role === 'farmer' || user.role === 'business_owner') {
+                            // Seller view: orders for their business
+                            const business = await Business.findOne({ owner: user._id }).select('_id name');
+                            if (!business) {
+                                await whatsappService.sendTextMessage(
+                                    phone,
+                                    'You do not have any linked business yet, so there is no sales history.',
+                                    businessId
+                                );
+                                break;
+                            }
+                            query = { business: business._id, paymentStatus: 'paid' };
+                            perspectiveLabel = `sales for ${business.name}`;
+                        } else {
+                            // Buyer view: orders they placed by phone
+                            query = { 'customer.phone': user.phone, paymentStatus: 'paid' };
+                            perspectiveLabel = 'your purchases';
+                        }
+
+                        const orders = await HistoryOrderModel.find(query)
+                            .sort({ createdAt: -1 })
+                            .limit(limit);
+
+                        if (!orders.length) {
+                            await whatsappService.sendTextMessage(
+                                phone,
+                                `No recent ${perspectiveLabel} found.`,
+                                businessId
+                            );
+                            break;
+                        }
+
+                        let message = `📄 *Account Statement* (${perspectiveLabel})\n\n`;
+                        message += `Wallet balance: NGN ${user.wallet.balance}\n`;
+                        message += `Account No: ${user.wallet.accountNumber}\n\n`;
+
+                        for (const order of orders) {
+                            const date = order.createdAt.toLocaleDateString();
+                            const amount = order.total || order.subtotal || 0;
+                            message += `• ${date} - ${order.orderNumber} - NGN ${amount} (${order.status}/${order.paymentStatus})\n`;
+                        }
+
+                        await whatsappService.sendTextMessage(phone, message, businessId);
+                    } catch (e) {
+                        console.error('Error fetching account statement via WhatsApp:', e);
+                        await whatsappService.sendTextMessage(
+                            phone,
+                            'Sorry, I could not fetch your account statement right now. Please try again later.',
+                            businessId
+                        );
+                    }
                     break;
                 }
 
@@ -602,7 +763,7 @@ export const whatsappBotService = {
                         const { default: CancelOrderModel } = await import('../models/Order.js');
                         const order = await CancelOrderModel.findOne({
                             orderNumber: new RegExp(parsedCommand.data.orderId, 'i')
-                        });
+                        }).populate('items.product');
 
                         if (!order) {
                             await whatsappService.sendTextMessage(
@@ -615,6 +776,22 @@ export const whatsappBotService = {
 
                         order.status = 'cancelled';
                         await order.save();
+
+                        // Restock inventory for all items in this order
+                        try {
+                            if (Array.isArray(order.items)) {
+                                for (const item of order.items) {
+                                    if (item.product && item.product.inventory?.trackQuantity) {
+                                        await Product.findByIdAndUpdate(
+                                            item.product._id,
+                                            { $inc: { 'inventory.quantity': item.quantity } }
+                                        );
+                                    }
+                                }
+                            }
+                        } catch (restockError) {
+                            console.error('Error restocking inventory on order cancel:', restockError);
+                        }
 
                         if (order.delivery) {
                             const delivery = await Delivery.findById(order.delivery);
@@ -651,6 +828,49 @@ export const whatsappBotService = {
                     user.botState.status = 'AWAITING_LOCATION';
                     await user.save();
                     await whatsappService.sendTextMessage(phone, "Please open the attachment menu and send your current **Location Pin**.", businessId);
+                    break;
+                }
+
+                case 'RATE_SERVICE': {
+                    try {
+                        const { orderId, rating } = parsedCommand.data || {};
+                        if (!orderId || rating == null) {
+                            await whatsappService.sendTextMessage(phone, 'Usage: rate service <order ref> <1-5>. Example: rate service ORD000001 5', businessId);
+                            break;
+                        }
+                        const { default: RateOrderModel } = await import('../models/Order.js');
+                        const order = await RateOrderModel.findOne({ orderNumber: new RegExp(orderId, 'i') });
+                        if (!order) {
+                            await whatsappService.sendTextMessage(phone, `Order ${orderId} not found.`, businessId);
+                            break;
+                        }
+                        const r = Math.min(5, Math.max(1, parseInt(String(rating), 10) || 5));
+                        if (order.delivery) {
+                            const delivery = await Delivery.findById(order.delivery);
+                            if (delivery) {
+                                delivery.rating = {
+                                    speed: r,
+                                    service: r,
+                                    communication: r,
+                                    comment: 'Rated via WhatsApp'
+                                };
+                                await delivery.save();
+                            }
+                        }
+                        await whatsappService.sendTextMessage(phone, `Thank you! Your ${r}/5 rating for order ${order.orderNumber} has been recorded.`, businessId);
+                    } catch (e) {
+                        console.error('Error saving rating:', e);
+                        await whatsappService.sendTextMessage(phone, 'Could not save rating. Try again later.', businessId);
+                    }
+                    break;
+                }
+
+                case 'CONTACT_SUPPORT': {
+                    const supportPhone = process.env.SUPPORT_PHONE || process.env.SUPPORT_EMAIL || 'support@bizone.trade';
+                    const supportMsg = process.env.SUPPORT_PHONE
+                        ? `📞 *Support:* ${process.env.SUPPORT_PHONE}\n${process.env.SUPPORT_EMAIL ? `📧 ${process.env.SUPPORT_EMAIL}\n` : ''}Describe your issue in your next message and we\'ll get back to you.`
+                        : `📧 *Support:* ${supportPhone}\nDescribe your issue in your next message and we\'ll get back to you.`;
+                    await whatsappService.sendTextMessage(phone, supportMsg, businessId);
                     break;
                 }
 
