@@ -68,6 +68,47 @@ const productSchema = new mongoose.Schema({
   stats: {
     views: { type: Number, default: 0 },
     sales: { type: Number, default: 0 }
+  },
+  // Advanced pricing configuration for WhatsApp trade flows
+  pricing: {
+    unitLabel: { type: String, default: 'unit' }, // e.g. "bag", "kg"
+    basePricePerUnit: { type: Number, min: 0 },   // canonical per‑unit price
+    minOrderQuantity: { type: Number, min: 1, default: 1 },
+    bulkRules: [
+      {
+        minQuantity: { type: Number, min: 1 },
+        pricePerUnit: { type: Number, min: 0 }
+      }
+    ],
+    discountRules: [
+      {
+        type: { type: String, enum: ['PERCENTAGE', 'FLAT'], default: 'PERCENTAGE' },
+        thresholdQuantity: { type: Number, min: 1 },
+        value: { type: Number, min: 0 } // percentage or flat NGN amount
+      }
+    ]
+  },
+  // Delivery configuration specific to this product
+  deliveryOptions: {
+    enabled: { type: Boolean, default: false },
+    radiusKm: { type: Number, min: 0, default: 0 },
+    feeType: {
+      type: String,
+      enum: ['FLAT', 'PER_KM', 'NONE'],
+      default: 'NONE'
+    },
+    feeFlat: { type: Number, min: 0, default: 0 },
+    feePerKm: { type: Number, min: 0, default: 0 }
+  },
+  // Negotiation behaviour when buyers make offers via WhatsApp
+  negotiationPlan: {
+    mode: {
+      type: String,
+      enum: ['NONE', 'AUTO', 'MANUAL'],
+      default: 'AUTO'
+    },
+    maxDiscountPercent: { type: Number, min: 0, max: 100, default: 10 },
+    autoAcceptMinPrice: { type: Number, min: 0 } // explicit floor; if set it overrides computed floor
   }
 }, {
   timestamps: true

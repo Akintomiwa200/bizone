@@ -1,7 +1,26 @@
 import User from '../models/User.js';
 import Product from '../models/Product.js';
+import Business from '../models/Business.js';
+import Delivery from '../models/Delivery.js';
 import { parseCommand } from './commandParser.js';
 import { whatsappService } from './whatsappService.js';
+
+// Simple Haversine distance calculator (in kilometers) using [lng, lat] coordinates
+const haversineDistanceKm = (coords1 = [0, 0], coords2 = [0, 0]) => {
+    const [lng1, lat1] = coords1;
+    const [lng2, lat2] = coords2;
+    const toRad = (value) => (value * Math.PI) / 180;
+
+    const R = 6371; // Earth radius in km
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
 
 export const whatsappBotService = {
     // Main entry point for the bot logic
@@ -23,9 +42,6 @@ export const whatsappBotService = {
                 if (textContent.includes('1') || textContent.toLowerCase() === 'farmer') role = 'farmer';
                 if (textContent.includes('3') || textContent.toLowerCase() === 'delivery') role = 'delivery';
 
-                // Generate virtual account simulating Paystack for now
-                const mockAccount = '10' + Math.floor(Math.random() * 100000000);
-
                 user = new User({
                     name: `User_${phone.slice(-4)}`,
                     phone,
@@ -33,7 +49,16 @@ export const whatsappBotService = {
                     role,
                     wallet: {
                         balance: 0,
-                        accountNumber: mockAccount,
+                        // Derive account number deterministically from phone number (no random/mock)
+                        // Keep only digits and pad/truncate to 10–14 digits
+                        accountNumber: (() => {
+                            const digits = phone.replace(/\D/g, '');
+                            if (!digits) return undefined;
+                            // Use last 10 digits as core account number
+                            const core = digits.slice(-10);
+                            // Prefix with '10' to keep it in a bank-like range, but still based on phone
+                            return `10${core}`;
+                        })(),
                         bankName: 'Bizone Virtual Wallet'
                     },
                     botState: { status: 'IDLE' }
@@ -44,7 +69,7 @@ export const whatsappBotService = {
                     io.emit('new_user', user);
                 }
 
-                const successMessage = `Registration successful as a *${role}*! 🎉\n\nYour virtual wallet has been created.\n🏦 Account No: ${mockAccount}\n🏦 Bank: Bizone Virtual Wallet\n\nYou can now type commands like:\n- "Check account balance"\n- "Buy yam within 10km"\n\n*Please share your WhatsApp Location Pin so we can match you locally!*`;
+                const successMessage = `Registration successful as a *${role}*! 🎉\n\nYour virtual wallet has been created.\n🏦 Account No: ${user.wallet.accountNumber}\n🏦 Bank: Bizone Virtual Wallet\n\nYou can now type commands like:\n- "Check account balance"\n- "Buy yam within 10km"\n\n*Please share your WhatsApp Location Pin so we can match you locally!*`;
                 await whatsappService.sendTextMessage(phone, successMessage, businessId);
             } else {
                 await whatsappService.sendTextMessage(phone, 'Please reply with "hi" to start registration.', businessId);
@@ -91,7 +116,11 @@ export const whatsappBotService = {
 
                     const { item, distanceInMeters } = parsedCommand.data;
 
-                    await whatsappService.sendTextMessage(phone, `🔍 Searching for *${item}* within ${parsedCommand.data.originalDistance}...`, businessId);
+                    await whatsappService.sendTextMessage(
+                        phone,
+                        `🔍 Searching for *${item}* within ${parsedCommand.data.originalDistance}...`,
+                        businessId
+                    );
 
                     // Find products geographically
                     const products = await Product.aggregate([
@@ -117,12 +146,47 @@ export const whatsappBotService = {
                     ]);
 
                     if (products.length === 0) {
-                        await whatsappService.sendTextMessage(phone, `Sorry, no *${item}* found within that radius. Try increasing the distance.`, businessId);
+                        await whatsappService.sendTextMessage(
+                            phone,
+                            `Sorry, no *${item}* found within that radius. Try increasing the distance.`,
+                            businessId
+                        );
                     } else {
                         let replyList = `Found ${products.length} options for *${item}*:\n\n`;
                         products.forEach((prod, idx) => {
                             const distKm = (prod.distance / 1000).toFixed(1);
-                            replyList += `*${idx + 1}. ${prod.name}*\n💰 NGN ${prod.price}\n📍 ${distKm}km away\n\n`;
+
+                            const unitLabel = prod.pricing?.unitLabel || 'unit';
+                            const basePrice =
+                                prod.pricing?.basePricePerUnit && prod.pricing.basePricePerUnit > 0
+                                    ? prod.pricing.basePricePerUnit
+                                    : prod.price;
+
+                            const hasBulkRule =
+                                Array.isArray(prod.pricing?.bulkRules) && prod.pricing.bulkRules.length > 0;
+                            const bestBulkRule = hasBulkRule
+                                ? prod.pricing.bulkRules[0]
+                                : null;
+
+                            replyList += `*${idx + 1}. ${prod.name}*\n`;
+                            replyList += `💰 NGN ${basePrice.toLocaleString()} per ${unitLabel}\n`;
+
+                            if (bestBulkRule) {
+                                replyList += `📦 Bulk: from ${bestBulkRule.minQuantity}+ at NGN ${bestBulkRule.pricePerUnit.toLocaleString()} per ${unitLabel}\n`;
+                            }
+
+                            if (prod.deliveryOptions?.enabled) {
+                                const radius = prod.deliveryOptions.radiusKm || 0;
+                                replyList += `🚚 Delivery available within ${radius}km`;
+                                if (prod.deliveryOptions.feeType === 'FLAT' && prod.deliveryOptions.feeFlat > 0) {
+                                    replyList += ` (flat NGN ${prod.deliveryOptions.feeFlat.toLocaleString()})`;
+                                } else if (prod.deliveryOptions.feeType === 'PER_KM' && prod.deliveryOptions.feePerKm > 0) {
+                                    replyList += ` (NGN ${prod.deliveryOptions.feePerKm.toLocaleString()} per km)`;
+                                }
+                                replyList += `\n`;
+                            }
+
+                            replyList += `📍 ${distKm}km away\n\n`;
                         });
                         replyList += `Reply with the number to start buying.`;
                         await whatsappService.sendTextMessage(phone, replyList, businessId);
@@ -201,6 +265,15 @@ export const whatsappBotService = {
                             name: item,
                             category: 'Produce',
                             price: price,
+                            pricing: {
+                                unitLabel: 'unit',
+                                basePricePerUnit: price,
+                                minOrderQuantity: 1
+                            },
+                            negotiationPlan: {
+                                mode: 'AUTO',
+                                maxDiscountPercent: 10
+                            },
                             location: user.location,
                             status: 'active'
                         });
@@ -247,6 +320,23 @@ export const whatsappBotService = {
                             break;
                         }
 
+                        // Determine negotiation behaviour using product's negotiationPlan
+                        const negotiation = product.negotiationPlan || {};
+                        const basePricePerUnit =
+                            product.pricing?.basePricePerUnit && product.pricing.basePricePerUnit > 0
+                                ? product.pricing.basePricePerUnit
+                                : product.price;
+
+                        const maxDiscountPercent =
+                            typeof negotiation.maxDiscountPercent === 'number'
+                                ? negotiation.maxDiscountPercent
+                                : 10;
+
+                        let autoAcceptFloor = negotiation.autoAcceptMinPrice || 0;
+                        if (!autoAcceptFloor && basePricePerUnit > 0) {
+                            autoAcceptFloor = basePricePerUnit * (1 - maxDiscountPercent / 100);
+                        }
+
                         const newOrder = new Order({
                             business: product.business, // Ensure this points to the farmer's business
                             customer: { name: user.name, phone: user.phone },
@@ -257,11 +347,127 @@ export const whatsappBotService = {
                         });
                         await newOrder.save();
 
+                        // If delivery is enabled for this product and buyer has a location, attempt to create a Delivery task
+                        try {
+                            if (product.deliveryOptions?.enabled) {
+                                const buyerCoords = user.location?.coordinates;
+                                const productCoords = product.location?.coordinates;
+
+                                if (Array.isArray(buyerCoords) && Array.isArray(productCoords)) {
+                                    const distanceKm = haversineDistanceKm(productCoords, buyerCoords);
+                                    const radiusKm = product.deliveryOptions.radiusKm || 0;
+
+                                    if (!radiusKm || distanceKm <= radiusKm) {
+                                        let deliveryFee = 0;
+                                        if (product.deliveryOptions.feeType === 'FLAT') {
+                                            deliveryFee = product.deliveryOptions.feeFlat || 0;
+                                        } else if (product.deliveryOptions.feeType === 'PER_KM') {
+                                            const perKm = product.deliveryOptions.feePerKm || 0;
+                                            deliveryFee = Math.round(perKm * distanceKm);
+                                        }
+
+                                        const buyerAddress = user.location?.address || `${user.location?.city || ''}, ${user.location?.state || ''}`.trim();
+
+                                        const businessDoc = await Business.findById(product.business).select('contact name');
+                                        const pickupAddress = businessDoc?.contact?.address;
+
+                                        const delivery = new Delivery({
+                                            order: newOrder._id,
+                                            business: product.business,
+                                            pickup: {
+                                                location: {
+                                                    coordinates: {
+                                                        lat: pickupAddress?.coordinates?.lat,
+                                                        lng: pickupAddress?.coordinates?.lng
+                                                    },
+                                                    address: `${pickupAddress?.street || ''}, ${pickupAddress?.city || ''}, ${pickupAddress?.state || ''}`.trim(),
+                                                    contact: {
+                                                        name: businessDoc?.name,
+                                                        phone: businessDoc?.contact?.phone
+                                                    }
+                                                },
+                                                instructions: 'Pickup from farmer business location'
+                                            },
+                                            dropoff: {
+                                                location: {
+                                                    coordinates: {
+                                                        lat: buyerCoords[1],
+                                                        lng: buyerCoords[0]
+                                                    },
+                                                    address: buyerAddress
+                                                },
+                                                contact: {
+                                                    name: user.name,
+                                                    phone: user.phone
+                                                },
+                                                instructions: 'Deliver to WhatsApp buyer'
+                                            },
+                                            pricing: {
+                                                baseFee: deliveryFee,
+                                                distanceFee: 0,
+                                                sizeFee: 0,
+                                                total: deliveryFee,
+                                                paymentMethod: 'prepaid'
+                                            },
+                                            status: 'pending'
+                                        });
+
+                                        await delivery.save();
+
+                                        newOrder.delivery = delivery._id;
+                                        newOrder.deliveryFee = deliveryFee;
+                                        newOrder.total = newOrder.subtotal + deliveryFee;
+                                        await newOrder.save();
+                                    }
+                                }
+                            }
+                        } catch (deliveryError) {
+                            console.error('Error creating delivery for order:', deliveryError);
+                        }
+
                         if (io) {
                             io.emit('new_order', newOrder);
                         }
+                        // Decide whether to auto‑accept, reject, or wait for farmer decision
+                        if (negotiation.mode === 'NONE') {
+                            await whatsappService.sendTextMessage(
+                                phone,
+                                `The price for *${product.name}* is fixed and not negotiable. Your offer of NGN ${amount} was not accepted.`,
+                                businessId
+                            );
+                        } else if (negotiation.mode === 'AUTO' && amount >= autoAcceptFloor && autoAcceptFloor > 0) {
+                            newOrder.status = 'confirmed';
+                            await newOrder.save();
+                            if (io) io.emit('order_updated', newOrder);
 
-                        await whatsappService.sendTextMessage(phone, `Offer of NGN ${amount} sent to the farmer for *${product.name}*! Waiting for response... ⏳\nOrder Ref: *${newOrder.orderNumber}*`, businessId);
+                            await whatsappService.sendTextMessage(
+                                phone,
+                                `✅ Your offer of NGN ${amount} for *${product.name}* has been automatically accepted! Order Ref: *${newOrder.orderNumber}*.`,
+                                businessId
+                            );
+                        } else {
+                            await whatsappService.sendTextMessage(
+                                phone,
+                                `Offer of NGN ${amount} sent to the farmer for *${product.name}*! Waiting for response... ⏳\nOrder Ref: *${newOrder.orderNumber}*`,
+                                businessId
+                            );
+
+                            // Notify the farmer on WhatsApp if their business contact phone is set
+                            try {
+                                const farmerBusiness = await Business.findById(product.business).select('contact');
+                                const farmerPhone = farmerBusiness?.contact?.phone || farmerBusiness?.social?.whatsapp;
+                                if (farmerBusiness && farmerPhone) {
+                                    await whatsappService.sendTextMessage(
+                                        farmerPhone,
+                                        `You have a new offer for *${product.name}*.\nBuyer: ${user.name} (${user.phone})\nAmount: NGN ${amount}\nTo accept or reject, reply:\n- "accept offer ${newOrder.orderNumber}"\n- "reject offer ${newOrder.orderNumber}"`,
+                                        businessId
+                                    );
+                                }
+                            } catch (notifyError) {
+                                // Log silently but do not break buyer flow
+                                console.error('Error notifying farmer about offer:', notifyError);
+                            }
+                        }
                     }
                     break;
                 }
@@ -300,17 +506,144 @@ export const whatsappBotService = {
                 }
 
                 case 'TRACK_ORDER': {
-                    await whatsappService.sendTextMessage(phone, `Order ${parsedCommand.data.orderId} is currently OUT FOR DELIVERY 🚚.`, businessId);
+                    try {
+                        const { default: TrackOrderModel } = await import('../models/Order.js');
+                        const order = await TrackOrderModel.findOne({
+                            orderNumber: new RegExp(parsedCommand.data.orderId, 'i')
+                        }).populate('delivery');
+
+                        if (!order) {
+                            await whatsappService.sendTextMessage(
+                                phone,
+                                `I couldn't find any order with reference ${parsedCommand.data.orderId}.`,
+                                businessId
+                            );
+                            break;
+                        }
+
+                        let message = `📦 *Order ${order.orderNumber}*\nStatus: ${order.status}\nPayment: ${order.paymentStatus}\nTotal: NGN ${order.total}\n`;
+
+                        if (order.delivery) {
+                            const delivery = order.delivery._id ? await Delivery.findById(order.delivery._id) : order.delivery;
+                            if (delivery) {
+                                message += `\n🚚 *Delivery*\nStatus: ${delivery.status}\n`;
+                                if (delivery.timeline?.estimatedDelivery) {
+                                    message += `ETA: ${delivery.timeline.estimatedDelivery.toLocaleString()}\n`;
+                                }
+                            }
+                        }
+
+                        await whatsappService.sendTextMessage(phone, message, businessId);
+                    } catch (e) {
+                        console.error('Error tracking order via WhatsApp:', e);
+                        await whatsappService.sendTextMessage(
+                            phone,
+                            'Sorry, I had trouble fetching your order status. Please try again later.',
+                            businessId
+                        );
+                    }
                     break;
                 }
 
                 case 'CONFIRM_DELIVERY': {
-                    await whatsappService.sendTextMessage(phone, `Delivery for ${parsedCommand.data.orderId} confirmed! Payment will be released to the farmer.`, businessId);
+                    try {
+                        const { default: ConfirmOrderModel } = await import('../models/Order.js');
+                        const order = await ConfirmOrderModel.findOne({
+                            orderNumber: new RegExp(parsedCommand.data.orderId, 'i')
+                        });
+
+                        if (!order) {
+                            await whatsappService.sendTextMessage(
+                                phone,
+                                `I couldn't find any order with reference ${parsedCommand.data.orderId}.`,
+                                businessId
+                            );
+                            break;
+                        }
+
+                        order.status = 'delivered';
+                        await order.save();
+
+                        if (order.delivery) {
+                            const delivery = await Delivery.findById(order.delivery);
+                            if (delivery) {
+                                delivery.status = 'delivered';
+                                delivery.timeline = delivery.timeline || {};
+                                delivery.timeline.actualDelivery = new Date();
+                                delivery.updates = delivery.updates || [];
+                                delivery.updates.push({
+                                    status: 'delivered',
+                                    note: 'Confirmed by customer via WhatsApp'
+                                });
+                                await delivery.save();
+                            }
+                        }
+
+                        if (io) io.emit('order_updated', order);
+
+                        await whatsappService.sendTextMessage(
+                            phone,
+                            `✅ Delivery for order ${order.orderNumber} confirmed! Payment will be released to the farmer.`,
+                            businessId
+                        );
+                    } catch (e) {
+                        console.error('Error confirming delivery via WhatsApp:', e);
+                        await whatsappService.sendTextMessage(
+                            phone,
+                            'Sorry, I could not confirm your delivery right now. Please try again later.',
+                            businessId
+                        );
+                    }
                     break;
                 }
 
                 case 'CANCEL_ORDER': {
-                    await whatsappService.sendTextMessage(phone, `Order ${parsedCommand.data.orderId} has been cancelled.`, businessId);
+                    try {
+                        const { default: CancelOrderModel } = await import('../models/Order.js');
+                        const order = await CancelOrderModel.findOne({
+                            orderNumber: new RegExp(parsedCommand.data.orderId, 'i')
+                        });
+
+                        if (!order) {
+                            await whatsappService.sendTextMessage(
+                                phone,
+                                `I couldn't find any order with reference ${parsedCommand.data.orderId}.`,
+                                businessId
+                            );
+                            break;
+                        }
+
+                        order.status = 'cancelled';
+                        await order.save();
+
+                        if (order.delivery) {
+                            const delivery = await Delivery.findById(order.delivery);
+                            if (delivery) {
+                                delivery.status = 'failed';
+                                delivery.updates = delivery.updates || [];
+                                delivery.updates.push({
+                                    status: 'failed',
+                                    note: 'Cancelled by customer via WhatsApp'
+                                });
+                                await delivery.save();
+                            }
+                        }
+
+                        if (io) io.emit('order_updated', order);
+
+                        await whatsappService.sendTextMessage(
+                            phone,
+                            `Order ${order.orderNumber} has been cancelled.`,
+                            businessId
+                        );
+                    } catch (e) {
+                        console.error('Error cancelling order via WhatsApp:', e);
+                        await whatsappService.sendTextMessage(
+                            phone,
+                            'Sorry, I could not cancel your order right now. Please try again later.',
+                            businessId
+                        );
+                    }
                     break;
                 }
 

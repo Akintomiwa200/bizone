@@ -85,23 +85,48 @@ export const parseCommand = (message) => {
             };
         }
 
-        // 3. Buy Product with Distance
-        const buyWithDistanceMatch = text.match(/(?:i want to )?buy\s+(.+?)\s+(?:within|in|within a|in a)\s+(\d+)\s*(km|m)(?:\s+radius)?/i);
+        // 3. Buy Product with Distance (optionally including quantity)
+        // Examples:
+        //  - "buy yam within 10km"
+        //  - "buy 20 bags of yam within 10km"
+        //  - "buy yam 20 bags within 10km radius"
+        const buyWithDistanceMatch =
+            text.match(/(?:i want to )?buy\s+(?:(\d+)\s+(\w+)\s+of\s+)?(.+?)\s+(?:within|in|within a|in a)\s+(\d+)\s*(km|m)(?:\s+radius)?/i) ||
+            text.match(/(?:i want to )?buy\s+(.+?)\s+(?:(\d+)\s+(\w+)\s+)?(?:within|in|within a|in a)\s+(\d+)\s*(km|m)(?:\s+radius)?/i);
+
         if (buyWithDistanceMatch) {
-            const item = buyWithDistanceMatch[1].trim();
+            // Support both match variants while keeping indices readable
+            const quantityRaw = buyWithDistanceMatch[1] || buyWithDistanceMatch[2];
+            const unitLabelRaw = buyWithDistanceMatch[2] || buyWithDistanceMatch[3];
+            const itemRaw = buyWithDistanceMatch[3] || buyWithDistanceMatch[1];
+            const distanceRaw = buyWithDistanceMatch[4];
+            const distanceUnitRaw = buyWithDistanceMatch[5];
+
+            const item = (itemRaw || '').trim();
             const distanceValue = validateNumber(
-                buyWithDistanceMatch[2], 
-                COMMAND_CONFIG.MIN_DISTANCE, 
+                distanceRaw,
+                COMMAND_CONFIG.MIN_DISTANCE,
                 COMMAND_CONFIG.MAX_DISTANCE_KM,
                 COMMAND_CONFIG.DEFAULT_DISTANCE_KM
             );
-            const unit = buyWithDistanceMatch[3].toLowerCase();
-            
+            const unit = (distanceUnitRaw || 'km').toLowerCase();
+
             // Convert to meters for MongoDB $geoNear
             let radiusInMeters = distanceValue;
             if (unit === 'km') {
                 radiusInMeters *= 1000;
             }
+
+            const quantity = quantityRaw ? validateNumber(
+                quantityRaw,
+                1,
+                1000000,
+                1
+            ) : null;
+
+            const unitLabel = quantity && unitLabelRaw
+                ? unitLabelRaw.toLowerCase()
+                : null;
 
             return {
                 intent: INTENTS.MATCH_PRODUCT,
@@ -111,7 +136,9 @@ export const parseCommand = (message) => {
                     distanceInMeters: radiusInMeters,
                     originalDistance: `${distanceValue}${unit}`,
                     unit,
-                    searchType: 'geospatial'
+                    searchType: 'geospatial',
+                    ...(quantity && { quantity }),
+                    ...(unitLabel && { unitLabel })
                 }
             };
         }
