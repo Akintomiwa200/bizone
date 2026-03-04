@@ -1,6 +1,35 @@
 import { whatsappService } from '../services/whatsappService.js';
 import Business from '../models/Business.js';
 import { realtimeService } from '../services/realtimeService.js';
+import crypto from 'crypto';
+
+const verifyWebhookSignature = (req) => {
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  // If app secret is not configured, skip signature validation.
+  if (!appSecret) return true;
+
+  const signature = req.get('x-hub-signature-256');
+  const rawBody = req.rawBody;
+
+  if (!signature || !rawBody || !signature.startsWith('sha256=')) {
+    return false;
+  }
+
+  const expectedHash = crypto
+    .createHmac('sha256', appSecret)
+    .update(rawBody)
+    .digest('hex');
+  const expectedSignature = `sha256=${expectedHash}`;
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+  } catch {
+    return false;
+  }
+};
 
 // @desc    Send WhatsApp message
 // @route   POST /api/whatsapp/messages
@@ -295,6 +324,13 @@ export const verifyWebhook = async (req, res) => {
 // @access  Public
 export const handleWebhook = async (req, res) => {
   try {
+    if (!verifyWebhookSignature(req)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid webhook signature'
+      });
+    }
+
     // Acknowledge webhook immediately
     res.status(200).send('OK');
 

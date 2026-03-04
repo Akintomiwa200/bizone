@@ -1,6 +1,8 @@
-import fs from 'fs/promises'; // Using promises API
+import fs from 'fs/promises';
+import { createWriteStream } from 'node:fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import PDFDocument from 'pdfkit';
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -90,8 +92,9 @@ export const receiptService = {
             
             if (transaction.items?.length > 0) {
                 transaction.items.forEach((item, index) => {
+                    const name = item.name || item.product?.name || 'Product';
                     const subtotal = item.quantity * item.price;
-                    lines.push(`${index + 1}. ${item.name.substring(0, 20)}`);
+                    lines.push(`${index + 1}. ${String(name).substring(0, 20)}`);
                     lines.push(`   ${item.quantity} x ${this._formatCurrency(item.price)} = ${this._formatCurrency(subtotal)}`);
                 });
             } else {
@@ -104,7 +107,7 @@ export const receiptService = {
             const subtotal = transaction.subtotal || transaction.amount;
             const tax = transaction.tax || 0;
             const discount = transaction.discount || 0;
-            const total = transaction.amount;
+            const total = transaction.amount ?? transaction.total;
             
             lines.push(`📝 *Subtotal:* ${this._formatCurrency(subtotal)}`);
             if (tax > 0) lines.push(`💰 *Tax:* ${this._formatCurrency(tax)}`);
@@ -137,32 +140,69 @@ export const receiptService = {
     },
 
     /**
-     * Generates a PDF receipt
-     * @param {Object} transaction - Transaction data
+     * Generates a PDF receipt using PDFKit
+     * @param {Object} transaction - Transaction data (amount/total, items, orderNumber/reference, etc.)
      * @param {string} businessName - Business name
-     * @param {Object} options - Additional options
+     * @param {Object} options - { baseUrl } for public URL
      * @returns {Promise<string>} URL or path to generated PDF
      */
     async generatePdfReceipt(transaction, businessName, options = {}) {
         try {
             this._validateInput(transaction, businessName);
             await this._ensureUploadDir();
-            
-            const fileName = `receipt_${transaction._id || Date.now()}_${Date.now()}.pdf`;
+
+            const fileName = `receipt_${(transaction._id || transaction.reference || Date.now()).toString()}_${Date.now()}.pdf`;
             const sanitizedFileName = this._sanitizeFilename(fileName);
             const filePath = path.join(RECEIPT_CONFIG.UPLOAD_DIR, sanitizedFileName);
-            
-            // For now, create a simple text file as PDF placeholder
-            // In production, integrate with PDFKit or similar
-            const textReceipt = this.generateTextReceipt(transaction, businessName);
-            await fs.writeFile(filePath.replace('.pdf', '.txt'), textReceipt);
-            
-            // Return the URL (adjust based on your static file serving)
-            const baseUrl = options.baseUrl || 'https://bizone.trade';
-            const relativePath = `/uploads/invoices/${sanitizedFileName}`;
-            
-            return `${baseUrl}${relativePath}`;
-            
+
+            const total = transaction.amount ?? transaction.total;
+            const ref = transaction.reference || transaction.orderNumber || transaction._id;
+
+            return new Promise((resolve, reject) => {
+                const doc = new PDFDocument({ margin: 50 });
+                const stream = createWriteStream(filePath);
+
+                doc.pipe(stream);
+
+                doc.fontSize(18).text(businessName, { align: 'center' });
+                doc.fontSize(12).text('RECEIPT', { align: 'center' });
+                doc.moveDown();
+
+                doc.fontSize(10);
+                doc.text(`Date: ${this._formatDate(transaction.createdAt || new Date())}`);
+                doc.text(`Reference: ${ref}`);
+                doc.text(`Status: ${(transaction.status || 'COMPLETED').toUpperCase()}`);
+                doc.text(`Payment: ${transaction.paymentMethod || 'N/A'}`);
+                doc.moveDown();
+
+                doc.text('ITEMS', { underline: true });
+                doc.moveDown(0.5);
+
+                if (transaction.items?.length > 0) {
+                    transaction.items.forEach((item, index) => {
+                        const name = item.name || item.product?.name || 'Product';
+                        const subtotal = (item.quantity || 0) * (item.price || 0);
+                        doc.text(`${index + 1}. ${String(name).substring(0, 40)}`);
+                        doc.text(`   ${item.quantity} x ${this._formatCurrency(item.price)} = ${this._formatCurrency(subtotal)}`);
+                    });
+                } else {
+                    doc.text('Payment for order / services');
+                }
+
+                doc.moveDown();
+                doc.text(`TOTAL: ${this._formatCurrency(total)}`, { align: 'right' });
+                doc.moveDown(2);
+                doc.fontSize(9).text('Thank you for your business. Powered by BizOne.', { align: 'center' });
+
+                doc.end();
+
+                stream.on('finish', () => {
+                    const baseUrl = options.baseUrl || process.env.FRONTEND_URL || 'https://bizone.trade';
+                    const relativePath = `/uploads/invoices/${sanitizedFileName}`;
+                    resolve(`${baseUrl.replace(/\/$/, '')}${relativePath}`);
+                });
+                stream.on('error', reject);
+            });
         } catch (error) {
             console.error('Error generating PDF receipt:', error);
             throw new Error(`Failed to generate PDF receipt: ${error.message}`);

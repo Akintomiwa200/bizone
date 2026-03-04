@@ -115,8 +115,8 @@ const deliverySchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate delivery ID before saving
-deliverySchema.pre('save', async function(next) {
+// Generate delivery ID before validation so required check passes on create
+deliverySchema.pre('validate', async function(next) {
   if (this.isNew && !this.deliveryId) {
     const count = await mongoose.model('Delivery').countDocuments();
     this.deliveryId = `DV${String(count + 1).padStart(6, '0')}`;
@@ -129,4 +129,3 @@ deliverySchema.index({ 'pickup.location.coordinates': '2dsphere' });
 deliverySchema.index({ 'dropoff.location.coordinates': '2dsphere' });
 
 export default mongoose.model('Delivery', deliverySchema);
-

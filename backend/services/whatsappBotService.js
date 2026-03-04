@@ -4,6 +4,7 @@ import Business from '../models/Business.js';
 import Delivery from '../models/Delivery.js';
 import { parseCommand } from './commandParser.js';
 import { whatsappService } from './whatsappService.js';
+import { realtimeService } from './realtimeService.js';
 
 // Simple Haversine distance calculator (in kilometers) using [lng, lat] coordinates
 const haversineDistanceKm = (coords1 = [0, 0], coords2 = [0, 0]) => {
@@ -46,6 +47,7 @@ export const whatsappBotService = {
                     name: `User_${phone.slice(-4)}`,
                     phone,
                     email: `${phone}@bizone.trade`, // Placeholder email
+                    password: `wa_${phone.replace(/\D/g, '').slice(-10) || 'user'}_secure`,
                     role,
                     wallet: {
                         balance: 0,
@@ -93,7 +95,15 @@ export const whatsappBotService = {
         // 3. Command Parsing for generic text
         if (messageData.type === 'text') {
             if (io) {
-                io.emit('new_message', { phone, text: textContent, businessId, timestamp: new Date() });
+                realtimeService.emitWhatsAppMessage(io, businessId?.toString(), {
+                    businessId,
+                    from: phone,
+                    to: businessId?.toString(),
+                    content: textContent,
+                    type: 'text',
+                    direction: 'inbound',
+                    timestamp: new Date().toISOString()
+                });
             }
 
             // Handle product selection by number when user is in AWAITING_SELECTION
@@ -483,7 +493,7 @@ export const whatsappBotService = {
                         }
 
                         if (io) {
-                            io.emit('new_order', newOrder);
+                            realtimeService.emitOrderCreated(io, newOrder);
                         }
                         // Decide whether to auto‑accept, reject, or wait for farmer decision
                         if (negotiation.mode === 'NONE') {
@@ -495,7 +505,7 @@ export const whatsappBotService = {
                         } else if (negotiation.mode === 'AUTO' && amount >= autoAcceptFloor && autoAcceptFloor > 0) {
                             newOrder.status = 'confirmed';
                             await newOrder.save();
-                            if (io) io.emit('order_updated', newOrder);
+                            if (io) realtimeService.emitOrderUpdated(io, newOrder);
 
                             await whatsappService.sendTextMessage(
                                 phone,
@@ -535,7 +545,7 @@ export const whatsappBotService = {
                     if (acceptedOrder) {
                         acceptedOrder.status = 'confirmed';
                         await acceptedOrder.save();
-                        if (io) io.emit('order_updated', acceptedOrder);
+                        if (io) realtimeService.emitOrderUpdated(io, acceptedOrder);
                         await whatsappService.sendTextMessage(phone, `Offer ${parsedCommand.data.offerId} accepted! Proceeding to fulfillment.`, businessId);
                     } else {
                         await whatsappService.sendTextMessage(phone, `Order ${parsedCommand.data.offerId} not found.`, businessId);
@@ -564,7 +574,7 @@ export const whatsappBotService = {
                         } catch (restockError) {
                             console.error('Error restocking on reject offer:', restockError);
                         }
-                        if (io) io.emit('order_updated', rejectedOrder);
+                        if (io) realtimeService.emitOrderUpdated(io, rejectedOrder);
                         await whatsappService.sendTextMessage(phone, `Offer ${parsedCommand.data.offerId} rejected.`, businessId);
                     } else {
                         await whatsappService.sendTextMessage(phone, `Order ${parsedCommand.data.offerId} not found.`, businessId);
@@ -740,7 +750,7 @@ export const whatsappBotService = {
                             }
                         }
 
-                        if (io) io.emit('order_updated', order);
+                        if (io) realtimeService.emitOrderUpdated(io, order);
 
                         await whatsappService.sendTextMessage(
                             phone,
@@ -806,7 +816,7 @@ export const whatsappBotService = {
                             }
                         }
 
-                        if (io) io.emit('order_updated', order);
+                        if (io) realtimeService.emitOrderUpdated(io, order);
 
                         await whatsappService.sendTextMessage(
                             phone,

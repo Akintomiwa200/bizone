@@ -9,7 +9,7 @@ const whatsappConfig = {
   phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
   accessToken: process.env.WHATSAPP_ACCESS_TOKEN,
   verifyToken: process.env.WHATSAPP_VERIFY_TOKEN || 'bizone_verify_token',
-  webhookUrl: process.env.WHATSAPP_WEBHOOK_URL || `${process.env.FRONTEND_URL}/api/webhooks/whatsapp`,
+  webhookUrl: process.env.WHATSAPP_WEBHOOK_URL || `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/whatsapp/webhook`,
   businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
   appId: process.env.WHATSAPP_APP_ID,
   appSecret: process.env.WHATSAPP_APP_SECRET,
@@ -26,4 +26,3 @@ const whatsappApiClient = axios.create({
 
 export { whatsappConfig, whatsappApiClient };
 export default whatsappConfig;
-
