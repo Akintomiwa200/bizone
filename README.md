@@ -17,6 +17,19 @@
 14. [Troubleshooting Guide](#-troubleshooting-guide)
 15. [Contributing Guidelines](#-contributing-guidelines)
 16. [License](#-license)
+17. [Project Governance & Legal](#-project-governance--legal)
+
+---
+
+## **📘 Project Governance & Legal**
+
+- License: `MIT` ([LICENSE](./LICENSE))
+- Contributing Guide: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Code of Conduct: [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- Security Policy: [SECURITY.md](./SECURITY.md)
+- Changelog: [CHANGELOG.md](./CHANGELOG.md)
+- Release Checklist: [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md)
+- Root Environment Template: [\.env.example](./.env.example)
 
 ---
 
