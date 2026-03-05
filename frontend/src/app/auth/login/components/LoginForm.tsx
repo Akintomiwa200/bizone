@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
 import SocialAuth from './SocialAuth'
+import { useAuth } from '@/hooks/useAuth'
 import { 
   Eye, 
   EyeOff, 
@@ -28,6 +29,8 @@ const LoginForm = () => {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const { login } = useAuth()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -39,12 +42,19 @@ const LoginForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
+    setErrorMessage('')
+
+    try {
+      await login({
+        email: formData.email.trim(),
+        password: formData.password,
+      })
       router.push('/dashboard')
-    }, 2000)
+    } catch (error: any) {
+      setErrorMessage(error?.response?.data?.message || 'Invalid credentials. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const features = [
@@ -179,6 +189,11 @@ const LoginForm = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 }}
                 >
+                  {errorMessage ? (
+                    <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                      {errorMessage}
+                    </p>
+                  ) : null}
                   <Button
                     type="submit"
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg transition-all duration-300"

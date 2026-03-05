@@ -21,7 +21,7 @@ export interface UseWhatsAppReturn {
   fetchMessages: (contact?: string, page?: number, limit?: number) => Promise<void>;
   fetchContacts: () => Promise<void>;
   fetchTemplates: () => Promise<void>;
-  createTemplate: (template: Omit<WhatsAppTemplate, 'name'>) => Promise<void>;
+  createTemplate: (template: WhatsAppTemplate) => Promise<void>;
   deleteTemplate: (templateName: string) => Promise<void>;
   getBusinessProfile: () => Promise<any>;
   updateBusinessProfile: (profile: any) => Promise<void>;
@@ -159,7 +159,7 @@ export const useWhatsApp = () => {
     }
   }, []);
 
-  const createTemplate = useCallback(async (template: Omit<WhatsAppTemplate, 'name'>) => {
+  const createTemplate = useCallback(async (template: WhatsAppTemplate) => {
     setIsLoading(true);
     setError(null);
     try {

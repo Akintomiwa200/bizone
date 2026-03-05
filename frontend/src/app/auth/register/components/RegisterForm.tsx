@@ -15,6 +15,8 @@ import {
   ArrowRight,
   CheckCircle
 } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { businessAPI } from '@/lib/api/business'
 
 export interface FormData {
   fullName: string
@@ -39,6 +41,8 @@ const RegisterForm = () => {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
+  const [errorMessage, setErrorMessage] = useState('')
+  const { register } = useAuth()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -49,13 +53,44 @@ const RegisterForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage('')
+
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMessage('Passwords do not match.')
+      return
+    }
+
     setIsLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const nameParts = formData.fullName.trim().split(/\s+/)
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ')
+
+      await register({
+        firstName,
+        lastName,
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        password: formData.password,
+        businessName: formData.businessName.trim(),
+      })
+
+      if (formData.businessName.trim()) {
+        await businessAPI.createBusiness({
+          name: formData.businessName.trim(),
+          category: formData.businessType || 'General',
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+        })
+      }
+
+      router.push('/dashboard')
+    } catch (error: any) {
+      setErrorMessage(error?.response?.data?.message || 'Unable to create account. Please try again.')
+    } finally {
       setIsLoading(false)
-      router.push('/auth/login')
-    }, 2000)
+    }
   }
 
   const nextStep = () => {
@@ -138,6 +173,11 @@ const RegisterForm = () => {
 
               {/* Signup Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
+                {errorMessage ? (
+                  <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {errorMessage}
+                  </p>
+                ) : null}
                 {currentStep === 1 && (
                   <BusinessTypeStep 
                     formData={formData} 

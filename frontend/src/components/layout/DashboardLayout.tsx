@@ -1,8 +1,10 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Sidebar from './Sidebar'
 import TopNav from './Navigation/TopNav'
+import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -14,6 +16,18 @@ export default function DashboardLayout({
   userType = 'business' 
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/auth/login')
+    }
+  }, [isAuthenticated, isLoading, router])
+
+  if (!isAuthenticated) {
+    return null
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">

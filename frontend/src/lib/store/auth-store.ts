@@ -30,10 +30,12 @@ export const authStore: StateCreator<AuthState> = (set, get) => ({
       });
       localStorage.setItem('auth_token', response.token);
     } catch (error: any) {
+      const message = error.response?.data?.message || 'Login failed';
       set({
-        error: error.response?.data?.message || 'Login failed',
+        error: message,
         isLoading: false,
       });
+      throw new Error(message);
     }
   },
 
@@ -48,10 +50,12 @@ export const authStore: StateCreator<AuthState> = (set, get) => ({
       });
       localStorage.setItem('auth_token', response.token);
     } catch (error: any) {
+      const message = error.response?.data?.message || 'Registration failed';
       set({
-        error: error.response?.data?.message || 'Registration failed',
+        error: message,
         isLoading: false,
       });
+      throw new Error(message);
     }
   },
 

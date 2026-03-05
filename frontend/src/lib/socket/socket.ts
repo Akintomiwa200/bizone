@@ -11,7 +11,7 @@ class SocketService {
         return;
       }
 
-      this.socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
+      this.socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
         auth: { token },
         transports: ['websocket', 'polling'],
       });
