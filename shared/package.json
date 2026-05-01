@@ -1,0 +1,11 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "description": "Shared types for Bizone frontend and backend",
+  "main": "types.ts",
+  "types": "types.ts",
+  "files": ["types.ts"],
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

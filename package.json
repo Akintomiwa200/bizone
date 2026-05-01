@@ -10,5 +10,12 @@
     "dev:frontend": "cd frontend && pnpm run dev",
     "build": "cd frontend && pnpm run build",
     "start": "cd backend && pnpm start"
+  },
+  "pnpm": {
+    "workspaces": [
+      "frontend",
+      "backend",
+      "shared"
+    ]
   }
 }
