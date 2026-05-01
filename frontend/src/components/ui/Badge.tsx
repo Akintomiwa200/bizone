@@ -9,17 +9,17 @@ interface BadgeProps {
 
 const Badge: React.FC<BadgeProps> = ({ children, variant = 'primary', className }) => {
   const variants = {
-    primary: 'bg-blue-100 text-blue-800',
-    secondary: 'bg-gray-100 text-gray-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    error: 'bg-red-100 text-red-800'
+    primary: 'bg-[var(--color-primary)] text-[var(--color-on-primary)]',
+    secondary: 'bg-[var(--color-surface-strong)] text-[var(--color-ink)]',
+    success: 'bg-[var(--color-semantic-success)] text-white',
+    warning: 'bg-[var(--color-timeline-done)] text-[var(--color-ink)]',
+    error: 'bg-[var(--color-semantic-error)] text-white'
   };
 
   return (
     <span
       className={cn(
-        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+        'inline-flex items-center px-[10px] py-[4px] rounded-[var(--radius-pill)] text-[11px] font-[600] leading-[1.4] tracking-[0.88px] uppercase',
         variants[variant],
         className
       )}

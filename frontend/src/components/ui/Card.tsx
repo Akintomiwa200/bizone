@@ -33,7 +33,7 @@ interface CardDescriptionProps {
 
 const Card: React.FC<CardProps> = ({ children, className }) => {
   return (
-    <div className={cn('bg-white rounded-lg border border-gray-200 shadow-sm', className)}>
+    <div className={cn('bg-[var(--color-surface-card)] rounded-[var(--radius-lg)] border border-[var(--color-hairline)]', className)}>
       {children}
     </div>
   );
@@ -41,7 +41,7 @@ const Card: React.FC<CardProps> = ({ children, className }) => {
 
 const CardHeader: React.FC<CardHeaderProps> = ({ children, className }) => {
   return (
-    <div className={cn('p-6 border-b border-gray-200', className)}>
+    <div className={cn('p-6 border-b border-[var(--color-hairline)]', className)}>
       {children}
     </div>
   );
@@ -57,7 +57,7 @@ const CardContent: React.FC<CardContentProps> = ({ children, className }) => {
 
 const CardFooter: React.FC<CardFooterProps> = ({ children, className }) => {
   return (
-    <div className={cn('p-6 border-t border-gray-200', className)}>
+    <div className={cn('p-6 border-t border-[var(--color-hairline)]', className)}>
       {children}
     </div>
   );
@@ -65,7 +65,7 @@ const CardFooter: React.FC<CardFooterProps> = ({ children, className }) => {
 
 const CardTitle: React.FC<CardTitleProps> = ({ children, className }) => {
   return (
-    <h3 className={cn('text-lg font-semibold text-gray-900', className)}>
+    <h3 className={cn('text-[18px] font-[600] text-[var(--color-ink)] leading-[1.4] tracking-[0px]', className)}>
       {children}
     </h3>
   );
@@ -73,7 +73,7 @@ const CardTitle: React.FC<CardTitleProps> = ({ children, className }) => {
 
 const CardDescription: React.FC<CardDescriptionProps> = ({ children, className }) => {
   return (
-    <p className={cn('text-sm text-gray-600', className)}>
+    <p className={cn('text-[14px] text-[var(--color-body)] leading-[1.5]', className)}>
       {children}
     </p>
   );

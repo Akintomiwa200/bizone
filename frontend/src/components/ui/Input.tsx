@@ -11,22 +11,22 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-[14px] font-[400] text-[var(--color-body)] mb-[var(--spacing-xs)]">
             {label}
           </label>
         )}
         <input
           type={type}
           className={cn(
-            'flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'border-red-500 focus:ring-red-500',
+            'flex h-[44px] w-full rounded-[var(--radius-md)] bg-[var(--color-surface-card)] px-[16px] py-[12px] text-[16px] text-[var(--color-ink)] placeholder:text-[var(--color-muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ink)] focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 border border-[var(--color-hairline)]',
+            error && 'border-[var(--color-semantic-error)] focus:ring-[var(--color-semantic-error)]',
             className
           )}
           ref={ref}
           {...props}
         />
         {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
+          <p className="mt-[var(--spacing-xs)] text-[14px] text-[var(--color-semantic-error)]">{error}</p>
         )}
       </div>
     );

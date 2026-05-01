@@ -119,10 +119,10 @@ const Header = () => {
             onClick={() => go(ROUTES.HOME)}
             className="flex items-center gap-2.5 group"
           >
-            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-green-700 transition-colors">
-              <Leaf className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-[var(--color-primary)] rounded-[var(--radius-md)] flex items-center justify-center shadow-sm group-hover:bg-[var(--color-primary-active)] transition-colors">
+              <Leaf className="w-4 h-4 text-[var(--color-on-primary)]" />
             </div>
-            <span className={`text-xl font-bold tracking-tight ${logoText} transition-colors`}>
+            <span className={`text-xl font-[400] tracking-tight ${logoText} transition-colors`}>
               Bizone
             </span>
           </button>
@@ -133,7 +133,7 @@ const Header = () => {
               <Link
                 key={link.name}
                 href={link.href}
-                className={`text-sm font-medium transition-colors ${textColor} ${hoverText}`}
+                className={`text-[14px] font-[500] leading-[1.4] tracking-[0px] transition-colors ${textColor} ${hoverText}`}
               >
                 {link.name}
               </Link>
@@ -148,10 +148,10 @@ const Header = () => {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 rounded-full pl-2 pr-3 py-1.5 hover:bg-black/5 transition-colors"
                 >
-                  <div className="w-7 h-7 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-7 h-7 bg-[var(--color-primary)] rounded-full flex items-center justify-center text-[var(--color-on-primary)] text-xs font-bold">
                     {displayName[0]?.toUpperCase() ?? 'U'}
                   </div>
-                  <span className={`text-sm font-medium ${textColor}`}>{displayName}</span>
+                  <span className={`text-[14px] font-[500] ${textColor}`}>{displayName}</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${textColor} ${userMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -162,16 +162,16 @@ const Header = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.97 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50"
+                      className="absolute right-0 top-full mt-2 w-44 bg-[var(--color-surface-card)] rounded-[var(--radius-lg)] shadow-xl border border-[var(--color-hairline)] py-1.5 z-50"
                     >
-                      <div className="px-3 py-2 border-b border-gray-100 mb-1">
-                        <p className="text-xs font-semibold text-gray-900">{displayName}</p>
-                        <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                      <div className="px-3 py-2 border-b border-[var(--color-hairline)] mb-1">
+                        <p className="text-xs font-semibold text-[var(--color-ink)]">{displayName}</p>
+                        <p className="text-xs text-[var(--color-muted)] truncate">{user?.email}</p>
                       </div>
-                      <button onClick={() => go(ROUTES.DASHBOARD.OVERVIEW)} className="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg mx-auto transition-colors">
-                        <LayoutDashboard className="w-4 h-4 mr-2 text-gray-400" /> Dashboard
+                      <button onClick={() => go(ROUTES.DASHBOARD.OVERVIEW)} className="flex items-center w-full px-3 py-2 text-[14px] text-[var(--color-ink)] hover:bg-[var(--color-canvas-soft)] rounded-lg mx-auto transition-colors">
+                        <LayoutDashboard className="w-4 h-4 mr-2 text-[var(--color-muted)]" /> Dashboard
                       </button>
-                      <button onClick={handleLogout} className="flex items-center w-full px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                      <button onClick={handleLogout} className="flex items-center w-full px-3 py-2 text-[14px] text-[var(--color-semantic-error)] hover:bg-[var(--color-canvas-soft)] rounded-lg transition-colors">
                         <LogOut className="w-4 h-4 mr-2" /> Log out
                       </button>
                     </motion.div>
@@ -182,13 +182,13 @@ const Header = () => {
               <>
                 <button
                   onClick={() => go(ROUTES.AUTH.LOGIN)}
-                  className={`text-sm font-medium transition-colors ${textColor} ${hoverText}`}
+                  className={`text-[14px] font-[500] transition-colors ${textColor} ${hoverText}`}
                 >
                   Sign in
                 </button>
                 <Button
                   onClick={() => go(ROUTES.AUTH.REGISTER)}
-                  className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-xl shadow-sm"
+                  variant="primary"
                 >
                   Get Started
                 </Button>

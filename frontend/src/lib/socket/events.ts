@@ -20,6 +20,12 @@ export const SOCKET_EVENTS = {
   CHAT_TYPING: 'chat:typing',
   CHAT_READ: 'chat:read',
 
+  // WhatsApp events
+  WHATSAPP_MESSAGE: 'whatsapp:message',
+  WHATSAPP_STATUS: 'whatsapp:status',
+  WHATSAPP_NEW_MESSAGE: 'new_message',
+  WHATSAPP_CONVERSATION_UPDATED: 'whatsapp:conversation_updated',
+
   // Notification events
   NOTIFICATION_CREATED: 'notification:created',
   NOTIFICATION_READ: 'notification:read',
